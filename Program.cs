@@ -1,7 +1,10 @@
+using Estacionamiento_grupo_9.Models;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.Services.AddScoped<IRepositorioCliente, RepositorioCliente>();
 
 var app = builder.Build();
 

@@ -1,0 +1,37 @@
+@model Estacionamiento_grupo_9.Models.Cliente
+
+@{
+    ViewData["Title"] = "Eliminar Cliente";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow-sm border-danger">
+            <div class="card-header bg-danger text-white">
+                <h4 class="mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Confirmar Eliminación</h4>
+            </div>
+            <div class="card-body">
+                <p class="text-danger fw-bold">¿Está seguro de que desea eliminar a este cliente?</p>
+
+                <dl class="row">
+                    <dt class="col-sm-4">Patente</dt>
+                    <dd class="col-sm-8"><span class="badge bg-secondary font-monospace fs-6">@Model.Patente</span></dd>
+
+                    <dt class="col-sm-4">Apellido y Nombre</dt>
+                    <dd class="col-sm-8">@Model.Apellido, @Model.Nombre</dd>
+
+                    <dt class="col-sm-4">Teléfono</dt>
+                    <dd class="col-sm-8">@Model.Telefono</dd>
+                </dl>
+
+                <form asp-action="Delete" method="post">
+                    <input type="hidden" asp-for="Patente" />
+                    <div class="d-flex justify-content-between mt-4">
+                        <a asp-action="Index" class="btn btn-secondary"><i class="bi bi-arrow-left me-1"></i>Cancelar</a>
+                        <button type="submit" class="btn btn-danger"><i class="bi bi-trash me-1"></i>Confirmar Eliminación</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
