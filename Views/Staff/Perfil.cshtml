@@ -1,0 +1,60 @@
+@model Estacionamiento_grupo_9.Models.PerfilViewModel
+
+@{
+    ViewData["Title"] = "Mi perfil";
+}
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i>@TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>@TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="bi bi-person-circle me-2"></i>Mi perfil</h4>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-4">
+                    <img src="@Url.Avatar(Model.AvatarUrl)" alt="Avatar" class="avatar-lg" />
+                </div>
+
+                <dl class="row">
+                    <dt class="col-sm-4">Usuario</dt>
+                    <dd class="col-sm-8">@Model.UserName</dd>
+
+                    <dt class="col-sm-4">Email</dt>
+                    <dd class="col-sm-8">@Model.Email</dd>
+
+                    <dt class="col-sm-4">Rol</dt>
+                    <dd class="col-sm-8"><span class="badge bg-secondary">@Model.Rol</span></dd>
+                </dl>
+
+                <hr />
+
+                <form asp-action="Perfil" method="post" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label asp-for="AvatarFile" class="form-label"></label>
+                        <input asp-for="AvatarFile" type="file" class="form-control" accept=".jpg,.jpeg,.png,.webp" />
+                        <div class="form-text">JPG, PNG o WEBP. Máximo 2 MB.</div>
+                        <span asp-validation-for="AvatarFile" class="text-danger"></span>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-upload me-1"></i>Actualizar avatar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

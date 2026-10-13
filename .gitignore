@@ -1,2 +1,6 @@
 bin/
 obj/
+
+# Avatares subidos por los usuarios (no se versionan)
+wwwroot/uploads/avatars/*
+!wwwroot/uploads/avatars/.gitkeep

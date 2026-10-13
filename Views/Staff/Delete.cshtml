@@ -1,0 +1,40 @@
+@model Estacionamiento_grupo_9.Models.StaffListItem
+
+@{
+    ViewData["Title"] = "Eliminar usuario";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow-sm border-danger">
+            <div class="card-header bg-danger text-white">
+                <h4 class="mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Confirmar eliminación</h4>
+            </div>
+            <div class="card-body">
+                <p class="text-danger fw-bold">¿Está seguro de que desea eliminar a este usuario?</p>
+
+                <div class="text-center mb-3">
+                    <img src="@Url.Avatar(Model.AvatarUrl)" alt="Avatar" class="avatar-lg" />
+                </div>
+
+                <dl class="row">
+                    <dt class="col-sm-4">Usuario</dt>
+                    <dd class="col-sm-8">@Model.UserName</dd>
+
+                    <dt class="col-sm-4">Email</dt>
+                    <dd class="col-sm-8">@Model.Email</dd>
+
+                    <dt class="col-sm-4">Rol</dt>
+                    <dd class="col-sm-8"><span class="badge bg-secondary">@Model.Rol</span></dd>
+                </dl>
+
+                <form asp-action="Delete" asp-route-id="@Model.Id" method="post">
+                    <div class="d-flex justify-content-between mt-4">
+                        <a asp-action="Index" class="btn btn-secondary"><i class="bi bi-arrow-left me-1"></i>Cancelar</a>
+                        <button type="submit" class="btn btn-danger"><i class="bi bi-trash me-1"></i>Confirmar eliminación</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
