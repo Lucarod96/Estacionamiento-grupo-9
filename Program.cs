@@ -9,7 +9,11 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 builder.Services.AddScoped<IRepositorioCliente, RepositorioCliente>();
+builder.Services.AddScoped<IRepositorioPlaza, RepositorioPlaza>();
 
+builder.Services.AddScoped<
+    IRepositorioTipoDePlaza,
+    RepositorioTipoDePlaza>();
 // --- Identity (Staff) ---
 var connectionString = builder.Configuration.GetConnectionString("MySql")
     ?? builder.Configuration.GetConnectionString("DefaultConnection")
