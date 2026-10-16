@@ -30,6 +30,24 @@
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-controller="Cliente" asp-action="Index">Clientes</a>
                         </li>
+                        @if (User.IsInRole(Rol.Admin) || User.IsInRole(Rol.Operador))
+{
+    <li class="nav-item">
+        <a class="nav-link text-dark"
+           asp-controller="Plaza"
+           asp-action="Index">
+            Plazas
+        </a>
+    </li>
+
+    <li class="nav-item">
+        <a class="nav-link text-dark"
+           asp-controller="TipoDePlaza"
+           asp-action="Index">
+            Tipos de plaza
+        </a>
+    </li>
+}
                         @if (User.IsInRole(Rol.Admin))
                         {
                             <li class="nav-item">
