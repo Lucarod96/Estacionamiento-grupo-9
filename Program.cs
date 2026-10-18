@@ -10,16 +10,15 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 builder.Services.AddScoped<IRepositorioCliente, RepositorioCliente>();
 builder.Services.AddScoped<IRepositorioPlaza, RepositorioPlaza>();
+builder.Services.AddScoped<IRepositorioTipoDePlaza, RepositorioTipoDePlaza>();
+builder.Services.AddScoped<IRepositorioEstadia, RepositorioEstadia>();
 
-builder.Services.AddScoped<
-    IRepositorioTipoDePlaza,
-    RepositorioTipoDePlaza>();
 // --- Identity (Staff) ---
 var connectionString = builder.Configuration.GetConnectionString("MySql")
     ?? builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("No se encontró la cadena de conexión 'MySql' en appsettings.json.");
 
-// Versión de MySQL fija para no necesitar conexión al arrancar. Ajustarla si usan otra.
+// Versión de MySQL fija para no necesitar conexión al arrancar.
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseMySql(connectionString, new MySqlServerVersion(new Version(8, 0, 36))));
 
@@ -63,10 +62,9 @@ using (var scope = app.Services.CreateScope())
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
-//asdfasfdsa
+
 app.UseHttpsRedirection();
 // Necesario para servir los avatares subidos en tiempo de ejecución (wwwroot/uploads).
 // MapStaticAssets solo conoce los archivos que existían al compilar.

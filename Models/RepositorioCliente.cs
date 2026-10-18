@@ -11,8 +11,8 @@ namespace Estacionamiento_grupo_9.Models
 
         public RepositorioCliente(IConfiguration configuration)
         {
-            connectionString = configuration.GetConnectionString("MySql") 
-                ?? configuration.GetConnectionString("DefaultConnection") 
+            connectionString = configuration.GetConnectionString("MySql")
+                ?? configuration.GetConnectionString("DefaultConnection")
                 ?? throw new InvalidOperationException("No se encontró la cadena de conexión 'MySql' en appsettings.json.");
         }
 
@@ -179,6 +179,43 @@ namespace Estacionamiento_grupo_9.Models
                 using (var command = new MySqlCommand(sql, connection))
                 {
                     command.Parameters.AddWithValue("@busqueda", $"%{busqueda.Trim()}%");
+                    connection.Open();
+
+                    using (var reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            lista.Add(new Cliente
+                            {
+                                Patente = reader.GetString(reader.GetOrdinal("Patente")),
+                                Nombre = reader.GetString(reader.GetOrdinal("Nombre")),
+                                Apellido = reader.GetString(reader.GetOrdinal("Apellido")),
+                                Telefono = reader.GetString(reader.GetOrdinal("Telefono"))
+                            });
+                        }
+                    }
+                }
+            }
+            return lista;
+        }
+
+        public IList<Cliente> BuscarLimitado(string busqueda, int maximo)
+        {
+            var lista = new List<Cliente>();
+            using (var connection = new MySqlConnection(connectionString))
+            {
+                string sql = @"SELECT Patente, Nombre, Apellido, Telefono
+                       FROM cliente
+                       WHERE Patente LIKE @busqueda
+                          OR Nombre LIKE @busqueda
+                          OR Apellido LIKE @busqueda
+                       ORDER BY Patente
+                       LIMIT @maximo;";
+
+                using (var command = new MySqlCommand(sql, connection))
+                {
+                    command.Parameters.AddWithValue("@busqueda", $"%{busqueda.Trim()}%");
+                    command.Parameters.AddWithValue("@maximo", maximo);
                     connection.Open();
 
                     using (var reader = command.ExecuteReader())

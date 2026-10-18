@@ -11,5 +11,6 @@ namespace Estacionamiento_grupo_9.Models
         IList<Cliente> ObtenerLista(int paginaNro, int tamPagina);
         int ObtenerCantidad();
         IList<Cliente> Buscar(string busqueda);
+        IList<Cliente> BuscarLimitado(string busqueda, int maximo);
     }
 }
