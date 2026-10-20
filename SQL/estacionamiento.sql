@@ -222,7 +222,47 @@ CREATE TABLE `cliente` (
 
 LOCK TABLES `cliente` WRITE;
 /*!40000 ALTER TABLE `cliente` DISABLE KEYS */;
+INSERT INTO `cliente` VALUES ('123456','Admin','admin','2664404040'),('AA123CD','Juan Demetrio','Abregu','2664409332'),('AA456CD','Milagros','Alfaro','2664409332'),('ABC123','Luca','Rodrigaño','2664409331');
 /*!40000 ALTER TABLE `cliente` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `estadia`
+--
+
+DROP TABLE IF EXISTS `estadia`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `estadia` (
+  `ID_Estadia` int NOT NULL AUTO_INCREMENT,
+  `ID_Plaza` int NOT NULL,
+  `Patente` varchar(10) NOT NULL,
+  `ID_Staff` int NOT NULL,
+  `Ingreso` datetime NOT NULL,
+  `Egreso` datetime DEFAULT NULL,
+  `Ocupado` tinyint(1) NOT NULL DEFAULT '1',
+  `PlazaActiva` int GENERATED ALWAYS AS (if((`Ocupado` = 1),`ID_Plaza`,NULL)) STORED,
+  `PatenteActiva` varchar(10) GENERATED ALWAYS AS (if((`Ocupado` = 1),`Patente`,NULL)) STORED,
+  PRIMARY KEY (`ID_Estadia`),
+  UNIQUE KEY `UX_estadia_plaza_activa` (`PlazaActiva`),
+  UNIQUE KEY `UX_estadia_patente_activa` (`PatenteActiva`),
+  KEY `IX_estadia_plaza` (`ID_Plaza`,`Ocupado`),
+  KEY `IX_estadia_patente` (`Patente`),
+  KEY `FK_estadia_staff` (`ID_Staff`),
+  CONSTRAINT `FK_estadia_cliente` FOREIGN KEY (`Patente`) REFERENCES `cliente` (`Patente`),
+  CONSTRAINT `FK_estadia_plaza` FOREIGN KEY (`ID_Plaza`) REFERENCES `plaza` (`ID_Plaza`),
+  CONSTRAINT `FK_estadia_staff` FOREIGN KEY (`ID_Staff`) REFERENCES `staff` (`Id`)
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `estadia`
+--
+
+LOCK TABLES `estadia` WRITE;
+/*!40000 ALTER TABLE `estadia` DISABLE KEYS */;
+INSERT INTO `estadia` (`ID_Estadia`, `ID_Plaza`, `Patente`, `ID_Staff`, `Ingreso`, `Egreso`, `Ocupado`) VALUES (1,1,'AA123CD',1,'2026-10-18 06:44:55','2026-10-18 06:49:48',0),(2,2,'ABC123',1,'2026-10-18 06:45:45','2026-10-18 07:03:45',0),(3,3,'AA456CD',1,'2026-10-18 06:47:42','2026-10-18 07:02:54',0),(4,1,'123456',1,'2026-10-18 06:50:14','2026-10-18 07:03:46',0),(5,3,'AA123CD',1,'2026-10-18 07:03:38','2026-10-18 07:03:48',0),(6,1,'AA123CD',1,'2026-10-18 07:03:59','2026-10-18 07:15:12',0),(7,2,'AA456CD',1,'2026-10-18 07:04:26','2026-10-18 07:15:11',0),(8,3,'123456',1,'2026-10-18 07:04:57','2026-10-18 07:15:09',0),(11,1,'AA123CD',1,'2026-10-18 07:15:23',NULL,1);
+/*!40000 ALTER TABLE `estadia` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -249,6 +289,7 @@ CREATE TABLE `plaza` (
 
 LOCK TABLES `plaza` WRITE;
 /*!40000 ALTER TABLE `plaza` DISABLE KEYS */;
+INSERT INTO `plaza` VALUES (1,5,0,'A'),(2,5,0,'B'),(3,5,0,'C');
 /*!40000 ALTER TABLE `plaza` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -313,6 +354,7 @@ CREATE TABLE `tipodeplaza` (
 
 LOCK TABLES `tipodeplaza` WRITE;
 /*!40000 ALTER TABLE `tipodeplaza` DISABLE KEYS */;
+INSERT INTO `tipodeplaza` VALUES (1,'Aire Libre',2000),(2,'Media Sombra',3000),(3,'Semi-Techado con Chapa',4000),(4,'Techado con Chapa',5000),(5,'Interior',10000);
 /*!40000 ALTER TABLE `tipodeplaza` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -325,4 +367,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-10-13 18:26:00
+-- Dump completed on 2026-10-20  9:53:45
