@@ -12,6 +12,7 @@ builder.Services.AddScoped<IRepositorioCliente, RepositorioCliente>();
 builder.Services.AddScoped<IRepositorioPlaza, RepositorioPlaza>();
 builder.Services.AddScoped<IRepositorioTipoDePlaza, RepositorioTipoDePlaza>();
 builder.Services.AddScoped<IRepositorioEstadia, RepositorioEstadia>();
+builder.Services.AddScoped<IRepositorioPago, RepositorioPago>();
 
 // --- Identity (Staff) ---
 var connectionString = builder.Configuration.GetConnectionString("MySql")
@@ -66,8 +67,7 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-// Necesario para servir los avatares subidos en tiempo de ejecución (wwwroot/uploads).
-// MapStaticAssets solo conoce los archivos que existían al compilar.
+// Necesario para servir avatares y comprobantes de pago (wwwroot/uploads).
 app.UseStaticFiles();
 app.UseRouting();
 
@@ -80,6 +80,5 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}")
     .WithStaticAssets();
-
 
 app.Run();

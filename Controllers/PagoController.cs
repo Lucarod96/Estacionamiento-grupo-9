@@ -1,0 +1,168 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
+using Estacionamiento_grupo_9.Models;
+using System;
+using System.IO;
+using System.Threading.Tasks;
+
+namespace Estacionamiento_grupo_9.Controllers
+{
+    [Authorize]
+    public class PagoController : Controller
+    {
+        private readonly IRepositorioPago repositorioPago;
+        private readonly IRepositorioEstadia repositorioEstadia;
+        private readonly IRepositorioPlaza repositorioPlaza;
+        private readonly IRepositorioTipoDePlaza repositorioTipoDePlaza;
+        private readonly IWebHostEnvironment environment;
+        private const int TAMANO_PAGINA = 10;
+
+        public PagoController(
+            IRepositorioPago repositorioPago,
+            IRepositorioEstadia repositorioEstadia,
+            IRepositorioPlaza repositorioPlaza,
+            IRepositorioTipoDePlaza repositorioTipoDePlaza,
+            IWebHostEnvironment environment)
+        {
+            this.repositorioPago = repositorioPago;
+            this.repositorioEstadia = repositorioEstadia;
+            this.repositorioPlaza = repositorioPlaza;
+            this.repositorioTipoDePlaza = repositorioTipoDePlaza;
+            this.environment = environment;
+        }
+
+        // GET: Pago
+        public IActionResult Index(string? busqueda, int pagina = 1)
+        {
+            if (pagina < 1) pagina = 1;
+
+            var pagos = string.IsNullOrWhiteSpace(busqueda)
+                ? repositorioPago.ObtenerLista(pagina, TAMANO_PAGINA)
+                : repositorioPago.Buscar(busqueda);
+
+            int totalRegistros = string.IsNullOrWhiteSpace(busqueda)
+                ? repositorioPago.ObtenerCantidad()
+                : pagos.Count;
+
+            // Cargar datos de la estadía para mostrar en la vista
+            foreach (var p in pagos)
+            {
+                p.Estadia = repositorioEstadia.ObtenerPorId(p.ID_Estadia);
+            }
+
+            ViewBag.PaginaActual = pagina;
+            ViewBag.TotalPaginas = (int)Math.Ceiling((double)totalRegistros / TAMANO_PAGINA);
+            ViewBag.Busqueda = busqueda;
+
+            return View(pagos);
+        }
+
+        // GET: Pago/Cobrar/5 (Cobra una estadía activa)
+        public IActionResult Cobrar(int id)
+        {
+            var estadia = repositorioEstadia.ObtenerPorId(id);
+            if (estadia == null) return NotFound();
+
+            // Verificar si ya fue pagada
+            var pagoExistente = repositorioPago.ObtenerPorEstadiaId(id);
+            if (pagoExistente != null)
+            {
+                TempData["ErrorMessage"] = "Esta estadía ya fue cobrada previamente.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            // Cargar Plaza y TipoDePlaza para calcular la tarifa
+            var plaza = repositorioPlaza.ObtenerPorId(estadia.ID_Plaza);
+            if (plaza == null) return BadRequest("La plaza asociada no existe.");
+
+            var tipoPlaza = repositorioTipoDePlaza.ObtenerPorId(plaza.ID_TipoDePlaza);
+            if (tipoPlaza == null) return BadRequest("El tipo de plaza no existe.");
+
+            DateTime fechaEgreso = DateTime.Now;
+            TimeSpan duracion = fechaEgreso - estadia.Ingreso;
+
+            // Cálculo: Mínimo 1 hora, fracción cuenta como hora entera
+            int horasACobrar = (int)Math.Ceiling(duracion.TotalHours);
+            if (horasACobrar < 1) horasACobrar = 1;
+
+            decimal montoCalculado = horasACobrar * tipoPlaza.PrecioXHora;
+
+            var pago = new Pago
+            {
+                ID_Estadia = estadia.ID_Estadia,
+                FechaEmision = fechaEgreso,
+                PrecioXHoraAplicado = tipoPlaza.PrecioXHora,
+                MontoTotal = montoCalculado,
+                Estadia = estadia
+            };
+
+            ViewBag.HorasCobradas = horasACobrar;
+            ViewBag.DuracionReal = $"{(int)duracion.TotalHours}h {duracion.Minutes}m";
+
+            return View(pago);
+        }
+
+        // POST: Pago/Cobrar
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Cobrar(Pago pago, IFormFile? comprobanteFile)
+        {
+            var estadia = repositorioEstadia.ObtenerPorId(pago.ID_Estadia);
+            if (estadia == null) return NotFound();
+
+            if (ModelState.IsValid)
+            {
+                // Manejo de archivo subido (Comprobante)
+                if (comprobanteFile != null && comprobanteFile.Length > 0)
+                {
+                    string uploadsFolder = Path.Combine(environment.WebRootPath, "uploads", "comprobantes");
+                    if (!Directory.Exists(uploadsFolder))
+                    {
+                        Directory.CreateDirectory(uploadsFolder);
+                    }
+
+                    string uniqueFileName = $"{Guid.NewGuid()}_{Path.GetFileName(comprobanteFile.FileName)}";
+                    string filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                    using (var fileStream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await comprobanteFile.CopyToAsync(fileStream);
+                    }
+
+                    pago.ComprobanteUrl = $"/uploads/comprobantes/{uniqueFileName}";
+                }
+
+                // 1. Guardar el Pago
+                int idPago = repositorioPago.Alta(pago);
+
+                if (idPago > 0)
+                {
+                    // 2. Registrar salida utilizando el método existente en el repositorio de Estadía
+                    repositorioEstadia.RegistrarSalida(pago.ID_Estadia, pago.FechaEmision);
+
+                    TempData["SuccessMessage"] = $"Cobro N° {idPago} registrado exitosamente. La estadía fue finalizada.";
+                    return RedirectToAction(nameof(Index));
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = "Ocurrió un error al registrar el pago.";
+                }
+            }
+
+            pago.Estadia = estadia;
+            return View(pago);
+        }
+
+        // GET: Pago/Details/5
+        public IActionResult Details(int id)
+        {
+            var pago = repositorioPago.ObtenerPorId(id);
+            if (pago == null) return NotFound();
+
+            pago.Estadia = repositorioEstadia.ObtenerPorId(pago.ID_Estadia);
+            return View(pago);
+        }
+    }
+}

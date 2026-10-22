@@ -1,0 +1,51 @@
+@model Estacionamiento_grupo_9.Models.Pago
+
+@{
+    ViewData["Title"] = "Detalle del Pago";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                <h4 class="mb-0"><i class="bi bi-receipt me-2"></i>Comprobante de Pago #@Model.ID_Pago</h4>
+                <span class="badge bg-success">COBRADO</span>
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-5">N° Estadía</dt>
+                    <dd class="col-sm-7">#@Model.ID_Estadia</dd>
+
+                    <dt class="col-sm-5">Vehículo / Patente</dt>
+                    <dd class="col-sm-7"><span class="badge bg-secondary font-monospace fs-6">@(Model.Estadia?.Patente ?? "-")</span></dd>
+
+                    <dt class="col-sm-5">Fecha de Emisión</dt>
+                    <dd class="col-sm-7">@Model.FechaEmision.ToString("dd/MM/yyyy HH:mm:ss")</dd>
+
+                    <dt class="col-sm-5">Tarifa Aplicada</dt>
+                    <dd class="col-sm-7">$@Model.PrecioXHoraAplicado.ToString("N2") / hs</dd>
+
+                    <dt class="col-sm-5 fs-5">Monto Total</dt>
+                    <dd class="col-sm-7 fs-5 fw-bold text-success">$@Model.MontoTotal.ToString("N2")</dd>
+
+                    <dt class="col-sm-5">Comprobante Adjunto</dt>
+                    <dd class="col-sm-7">
+                        @if (!string.IsNullOrEmpty(Model.ComprobanteUrl))
+                        {
+                            <a href="@Model.ComprobanteUrl" target="_blank" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-download me-1"></i>Ver / Descargar Adjunto
+                            </a>
+                        }
+                        else
+                        {
+                            <span class="text-muted">Ningún archivo adjuntado</span>
+                        }
+                    </dd>
+                </dl>
+            </div>
+            <div class="card-footer d-flex justify-content-between">
+                <a asp-action="Index" class="btn btn-secondary"><i class="bi bi-arrow-left me-1"></i>Volver al Historial</a>
+            </div>
+        </div>
+    </div>
+</div>

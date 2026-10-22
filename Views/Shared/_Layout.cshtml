@@ -40,6 +40,9 @@
                                 <a class="nav-link text-dark" asp-area="" asp-controller="Estadia"
                                    asp-action="Index">Estadías</a>
                             </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Pago" asp-action="Index">Pagos</a>
+                            </li>
                         }
                         @if (User.IsInRole(Rol.Admin) || User.IsInRole(Rol.Operador))
                         {

@@ -1,0 +1,58 @@
+@model Estacionamiento_grupo_9.Models.Pago
+
+@{
+    ViewData["Title"] = "Liquidar y Cobrar Estadía";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow-sm border-success">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0"><i class="bi bi-currency-dollar me-2"></i>Liquidar Estadía N° @Model.ID_Estadia</h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-light border mb-3">
+                    <div class="row">
+                        <div class="col-6"><strong>Patente:</strong> <span class="badge bg-dark font-monospace">@Model.Estadia?.Patente</span></div>
+                        <div class="col-6"><strong>Hora Ingreso:</strong> @Model.Estadia?.Ingreso.ToString("HH:mm") hs</div>
+                        <div class="col-6 mt-2"><strong>Duración Real:</strong> @ViewBag.DuracionReal</div>
+                        <div class="col-6 mt-2"><strong>Horas a Cobrar:</strong> <span class="badge bg-primary">@ViewBag.HorasCobradas hs</span></div>
+                    </div>
+                </div>
+
+                <form asp-action="Cobrar" method="post" enctype="multipart/form-data">
+                    <input type="hidden" asp-for="ID_Estadia" />
+                    <input type="hidden" asp-for="FechaEmision" />
+                    <input type="hidden" asp-for="PrecioXHoraAplicado" />
+                    <input type="hidden" asp-for="MontoTotal" />
+
+                    <div class="mb-3">
+                        <label class="form-label">Tarifa Aplicada</label>
+                        <input value="$@Model.PrecioXHoraAplicado.ToString("N2") / hs" class="form-control" disabled />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold fs-5 text-success">Monto Total a Cobrar</label>
+                        <input value="$@Model.MontoTotal.ToString("N2")" class="form-control form-control-lg fw-bold text-success" disabled />
+                    </div>
+
+                    <!-- Subida de archivos / comprobantes -->
+                    <div class="mb-3">
+                        <label class="form-label"><i class="bi bi-paperclip me-1"></i>Adjuntar Comprobante / Ticket (Opcional)</label>
+                        <input type="file" name="comprobanteFile" class="form-control" accept="image/*,.pdf" />
+                        <small class="form-text text-muted">Acepta archivos PDF o imágenes del comprobante emitido.</small>
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-4">
+                        <a asp-controller="Estadia" asp-action="Index" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left me-1"></i>Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="bi bi-check-lg me-1"></i>Confirmar Cobro
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
