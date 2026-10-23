@@ -2,9 +2,12 @@ using Microsoft.AspNetCore.Mvc;
 using Estacionamiento_grupo_9.Models;
 using System;
 using System.Collections.Generic;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Estacionamiento_grupo_9.Controllers
 {
+    
+    [Authorize(Roles = Rol.Admin + "," + Rol.Operador)]
     public class ClienteController : Controller
     {
         private readonly IRepositorioCliente repositorioCliente;
