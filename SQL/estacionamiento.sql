@@ -357,6 +357,17 @@ LOCK TABLES `tipodeplaza` WRITE;
 INSERT INTO `tipodeplaza` VALUES (1,'Aire Libre',2000),(2,'Media Sombra',3000),(3,'Semi-Techado con Chapa',4000),(4,'Techado con Chapa',5000),(5,'Interior',10000);
 /*!40000 ALTER TABLE `tipodeplaza` ENABLE KEYS */;
 UNLOCK TABLES;
+
+CREATE TABLE IF NOT EXISTS Pago (
+    ID_Pago INT AUTO_INCREMENT PRIMARY KEY,
+    ID_Estadia INT NOT NULL,
+    FechaEmision DATETIME NOT NULL,
+    PrecioXHoraAplicado DECIMAL(10, 2) NOT NULL,
+    MontoTotal DECIMAL(10, 2) NOT NULL,
+    ComprobanteUrl VARCHAR(255) NULL,
+    FOREIGN KEY (ID_Estadia) REFERENCES Estadia(ID_Estadia)
+);
+
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
