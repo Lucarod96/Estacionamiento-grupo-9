@@ -197,33 +197,119 @@ public async Task<IActionResult> Cobrar(
         Estadia = estadia
     };
 
-    // Se mantiene la subida actual.
-    // La validación del archivo será el siguiente cambio.
-    if (comprobanteFile != null && comprobanteFile.Length > 0)
+   // Preparar los datos para volver a mostrar el formulario.
+ViewBag.HorasCobradas = horas;
+ViewBag.DuracionReal =
+    $"{(int)duracion.TotalHours}h {duracion.Minutes}m";
+
+// El comprobante es opcional.
+if (comprobanteFile != null)
+{
+    const long MAXIMO_BYTES = 5 * 1024 * 1024;
+
+    if (comprobanteFile.Length == 0)
     {
-        string uploadsFolder = Path.Combine(
-            environment.WebRootPath,
-            "uploads",
-            "comprobantes");
+        ModelState.AddModelError(
+            "",
+            "El archivo seleccionado está vacío.");
 
-        Directory.CreateDirectory(uploadsFolder);
-
-        string uniqueFileName =
-            $"{Guid.NewGuid()}_{Path.GetFileName(comprobanteFile.FileName)}";
-
-        string filePath = Path.Combine(
-            uploadsFolder,
-            uniqueFileName);
-
-        using (var fileStream =
-            new FileStream(filePath, FileMode.CreateNew))
-        {
-            await comprobanteFile.CopyToAsync(fileStream);
-        }
-
-        pago.ComprobanteUrl =
-            $"/uploads/comprobantes/{uniqueFileName}";
+        return View(pago);
     }
+
+    if (comprobanteFile.Length > MAXIMO_BYTES)
+    {
+        ModelState.AddModelError(
+            "",
+            "El comprobante no puede superar los 5 MB.");
+
+        return View(pago);
+    }
+
+    string extension = Path.GetExtension(
+        comprobanteFile.FileName).ToLowerInvariant();
+
+    if (extension != ".pdf" &&
+        extension != ".jpg" &&
+        extension != ".jpeg" &&
+        extension != ".png")
+    {
+        ModelState.AddModelError(
+            "",
+            "Solo se permiten archivos PDF, JPG y PNG.");
+
+        return View(pago);
+    }
+
+    // Leer el archivo una sola vez para validar y guardar
+    // exactamente el mismo contenido.
+    using var contenido = new MemoryStream();
+    await comprobanteFile.CopyToAsync(contenido);
+
+    byte[] bytes = contenido.ToArray();
+
+    bool esPdf =
+        bytes.Length >= 5 &&
+        bytes[0] == 0x25 &&
+        bytes[1] == 0x50 &&
+        bytes[2] == 0x44 &&
+        bytes[3] == 0x46 &&
+        bytes[4] == 0x2D;
+
+    bool esJpg =
+        bytes.Length >= 3 &&
+        bytes[0] == 0xFF &&
+        bytes[1] == 0xD8 &&
+        bytes[2] == 0xFF;
+
+    bool esPng =
+        bytes.Length >= 8 &&
+        bytes[0] == 0x89 &&
+        bytes[1] == 0x50 &&
+        bytes[2] == 0x4E &&
+        bytes[3] == 0x47 &&
+        bytes[4] == 0x0D &&
+        bytes[5] == 0x0A &&
+        bytes[6] == 0x1A &&
+        bytes[7] == 0x0A;
+
+    bool formatoValido =
+        (extension == ".pdf" && esPdf) ||
+        ((extension == ".jpg" || extension == ".jpeg") && esJpg) ||
+        (extension == ".png" && esPng);
+
+    if (!formatoValido)
+    {
+        ModelState.AddModelError(
+            "",
+            "El contenido del archivo no coincide con su extensión.");
+
+        return View(pago);
+    }
+
+    string uploadsFolder = Path.Combine(
+        environment.WebRootPath,
+        "uploads",
+        "comprobantes");
+
+    Directory.CreateDirectory(uploadsFolder);
+
+    // Usar un nombre generado por el servidor.
+    string uniqueFileName =
+        $"{Guid.NewGuid():N}{extension}";
+
+    string filePath = Path.Combine(
+        uploadsFolder,
+        uniqueFileName);
+
+    using (var fileStream =
+        new FileStream(filePath, FileMode.CreateNew))
+    {
+        await fileStream.WriteAsync(bytes.AsMemory());
+    }
+
+    pago.ComprobanteUrl =
+        $"/uploads/comprobantes/{uniqueFileName}";
+}
 
    int idPago;
 
