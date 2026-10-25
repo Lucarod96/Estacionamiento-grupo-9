@@ -7,8 +7,14 @@ namespace Estacionamiento_grupo_9.Models
         int Alta(Pago pago);
         Pago? ObtenerPorId(int id);
         Pago? ObtenerPorEstadiaId(int estadiaId);
-        IList<Pago> ObtenerLista(int paginaNro, int tamPagina);
-        int ObtenerCantidad();
+
+        IList<Pago> ObtenerLista(
+            int paginaNro,
+            int tamPagina,
+            string busqueda = "");
+
+        int ObtenerCantidad(string busqueda = "");
+
         IList<Pago> Buscar(string busqueda);
     }
 }

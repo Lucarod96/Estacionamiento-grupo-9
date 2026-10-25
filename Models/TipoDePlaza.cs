@@ -19,6 +19,7 @@ public class TipoDePlaza
         typeof(decimal),
         "0.01",
         "99999999.99",
+        ParseLimitsInInvariantCulture = true,
         ErrorMessage = "El precio debe estar entre 0,01 y 99999999,99."
     )]
     public decimal PrecioXHora { get; set; }

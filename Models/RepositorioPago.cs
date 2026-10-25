@@ -108,59 +108,92 @@ namespace Estacionamiento_grupo_9.Models
             return pago;
         }
 
-        public IList<Pago> ObtenerLista(int paginaNro, int tamPagina)
+      public IList<Pago> ObtenerLista(
+    int paginaNro,
+    int tamPagina,
+    string busqueda = "")
+{
+    var lista = new List<Pago>();
+    int offset = (paginaNro - 1) * tamPagina;
+
+    using var connection = new MySqlConnection(connectionString);
+
+    string sql = @"
+        SELECT p.ID_Pago,
+               p.ID_Estadia,
+               p.FechaEmision,
+               p.PrecioXHoraAplicado,
+               p.MontoTotal,
+               p.ComprobanteUrl
+        FROM Pago p
+        INNER JOIN Estadia e ON p.ID_Estadia = e.ID_Estadia
+        WHERE e.Patente LIKE @busqueda
+           OR CAST(p.ID_Pago AS CHAR) LIKE @busqueda
+        ORDER BY p.ID_Pago DESC
+        LIMIT @limit OFFSET @offset;";
+
+    using var command = new MySqlCommand(sql, connection);
+
+    command.Parameters.AddWithValue(
+        "@busqueda", "%" + busqueda.Trim() + "%");
+
+    command.Parameters.AddWithValue("@limit", tamPagina);
+    command.Parameters.AddWithValue("@offset", offset);
+
+    connection.Open();
+
+    using var reader = command.ExecuteReader();
+
+    while (reader.Read())
+    {
+        lista.Add(new Pago
         {
-            var lista = new List<Pago>();
-            int offset = (paginaNro - 1) * tamPagina;
+            ID_Pago = reader.GetInt32(
+                reader.GetOrdinal("ID_Pago")),
 
-            using (var connection = new MySqlConnection(connectionString))
-            {
-                string sql = @"SELECT ID_Pago, ID_Estadia, FechaEmision, PrecioXHoraAplicado, MontoTotal, ComprobanteUrl 
-                               FROM Pago 
-                               ORDER BY ID_Pago DESC 
-                               LIMIT @limit OFFSET @offset;";
+            ID_Estadia = reader.GetInt32(
+                reader.GetOrdinal("ID_Estadia")),
 
-                using (var command = new MySqlCommand(sql, connection))
-                {
-                    command.Parameters.AddWithValue("@limit", tamPagina);
-                    command.Parameters.AddWithValue("@offset", offset);
-                    connection.Open();
+            FechaEmision = reader.GetDateTime(
+                reader.GetOrdinal("FechaEmision")),
 
-                    using (var reader = command.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            lista.Add(new Pago
-                            {
-                                ID_Pago = reader.GetInt32(reader.GetOrdinal("ID_Pago")),
-                                ID_Estadia = reader.GetInt32(reader.GetOrdinal("ID_Estadia")),
-                                FechaEmision = reader.GetDateTime(reader.GetOrdinal("FechaEmision")),
-                                PrecioXHoraAplicado = reader.GetDecimal(reader.GetOrdinal("PrecioXHoraAplicado")),
-                                MontoTotal = reader.GetDecimal(reader.GetOrdinal("MontoTotal")),
-                                ComprobanteUrl = reader.IsDBNull(reader.GetOrdinal("ComprobanteUrl")) ? null : reader.GetString(reader.GetOrdinal("ComprobanteUrl"))
-                            });
-                        }
-                    }
-                }
-            }
-            return lista;
-        }
+            PrecioXHoraAplicado = reader.GetDecimal(
+                reader.GetOrdinal("PrecioXHoraAplicado")),
 
-        public int ObtenerCantidad()
-        {
-            int cantidad = 0;
-            using (var connection = new MySqlConnection(connectionString))
-            {
-                string sql = @"SELECT COUNT(*) FROM Pago;";
+            MontoTotal = reader.GetDecimal(
+                reader.GetOrdinal("MontoTotal")),
 
-                using (var command = new MySqlCommand(sql, connection))
-                {
-                    connection.Open();
-                    cantidad = Convert.ToInt32(command.ExecuteScalar());
-                }
-            }
-            return cantidad;
-        }
+            ComprobanteUrl = reader.IsDBNull(
+                reader.GetOrdinal("ComprobanteUrl"))
+                    ? null
+                    : reader.GetString(
+                        reader.GetOrdinal("ComprobanteUrl"))
+        });
+    }
+
+    return lista;
+}
+
+       public int ObtenerCantidad(string busqueda = "")
+{
+    using var connection = new MySqlConnection(connectionString);
+
+    string sql = @"
+        SELECT COUNT(*)
+        FROM Pago p
+        INNER JOIN Estadia e ON p.ID_Estadia = e.ID_Estadia
+        WHERE e.Patente LIKE @busqueda
+           OR CAST(p.ID_Pago AS CHAR) LIKE @busqueda;";
+
+    using var command = new MySqlCommand(sql, connection);
+
+    command.Parameters.AddWithValue(
+        "@busqueda", "%" + busqueda.Trim() + "%");
+
+    connection.Open();
+
+    return Convert.ToInt32(command.ExecuteScalar());
+}
 
         public IList<Pago> Buscar(string busqueda)
         {

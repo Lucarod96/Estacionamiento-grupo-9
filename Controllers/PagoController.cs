@@ -34,30 +34,44 @@ namespace Estacionamiento_grupo_9.Controllers
         }
 
         // GET: Pago
-        public IActionResult Index(string? busqueda, int pagina = 1)
-        {
-            if (pagina < 1) pagina = 1;
+public IActionResult Index(string? busqueda, int pagina = 1)
+{
+    string filtro = (busqueda ?? "").Trim();
 
-            var pagos = string.IsNullOrWhiteSpace(busqueda)
-                ? repositorioPago.ObtenerLista(pagina, TAMANO_PAGINA)
-                : repositorioPago.Buscar(busqueda);
+    if (filtro.Length > 100)
+    {
+        return BadRequest(
+            "La búsqueda admite hasta 100 caracteres.");
+    }
 
-            int totalRegistros = string.IsNullOrWhiteSpace(busqueda)
-                ? repositorioPago.ObtenerCantidad()
-                : pagos.Count;
+    int totalRegistros =
+        repositorioPago.ObtenerCantidad(filtro);
 
-            // Cargar datos de la estadía para mostrar en la vista
-            foreach (var p in pagos)
-            {
-                p.Estadia = repositorioEstadia.ObtenerPorId(p.ID_Estadia);
-            }
+    int totalPaginas = Math.Max(
+        1,
+        (int)Math.Ceiling(
+            (double)totalRegistros / TAMANO_PAGINA));
 
-            ViewBag.PaginaActual = pagina;
-            ViewBag.TotalPaginas = (int)Math.Ceiling((double)totalRegistros / TAMANO_PAGINA);
-            ViewBag.Busqueda = busqueda;
+    pagina = Math.Clamp(pagina, 1, totalPaginas);
 
-            return View(pagos);
-        }
+    var pagos = repositorioPago.ObtenerLista(
+        pagina,
+        TAMANO_PAGINA,
+        filtro);
+
+    foreach (var pago in pagos)
+    {
+        pago.Estadia =
+            repositorioEstadia.ObtenerPorId(pago.ID_Estadia);
+    }
+
+    ViewBag.PaginaActual = pagina;
+    ViewBag.TotalPaginas = totalPaginas;
+    ViewBag.TotalRegistros = totalRegistros;
+    ViewBag.Busqueda = filtro;
+
+    return View(pagos);
+}
 
         // GET: Pago/Cobrar/5 (Cobra una estadía activa)
         public IActionResult Cobrar(int id)
