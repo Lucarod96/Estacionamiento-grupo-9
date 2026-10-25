@@ -119,55 +119,137 @@ public IActionResult Index(string? busqueda, int pagina = 1)
         }
 
         // POST: Pago/Cobrar
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Cobrar(Pago pago, IFormFile? comprobanteFile)
+[HttpPost]
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> Cobrar(
+    int ID_Estadia,
+    IFormFile? comprobanteFile)
+{
+    if (ID_Estadia <= 0)
+        return BadRequest("La estadía no es válida.");
+
+    var estadia = repositorioEstadia.ObtenerPorId(ID_Estadia);
+
+    if (estadia == null)
+        return NotFound();
+
+    // Volver a comprobar antes de guardar.
+    var pagoExistente =
+        repositorioPago.ObtenerPorEstadiaId(ID_Estadia);
+
+    if (pagoExistente != null)
+    {
+        TempData["ErrorMessage"] =
+            "Esta estadía ya fue cobrada previamente.";
+
+        return RedirectToAction(nameof(Index));
+    }
+
+    if (estadia.Egreso != null)
+    {
+        TempData["ErrorMessage"] =
+            "No se puede cobrar una estadía que ya tiene salida.";
+
+        return RedirectToAction("Index", "Estadia");
+    }
+
+    var plaza =
+        repositorioPlaza.ObtenerPorId(estadia.ID_Plaza);
+
+    if (plaza == null)
+        return BadRequest("La plaza asociada no existe.");
+
+    var tipoPlaza =
+        repositorioTipoDePlaza.ObtenerPorId(
+            plaza.ID_TipoDePlaza);
+
+    if (tipoPlaza == null)
+        return BadRequest("El tipo de plaza no existe.");
+
+    if (tipoPlaza.PrecioXHora <= 0)
+        return BadRequest("La tarifa debe ser mayor que cero.");
+
+    // Todos los valores del cobro se calculan en el servidor.
+    DateTime fechaEgreso = DateTime.Now;
+
+    if (estadia.Ingreso > fechaEgreso)
+        return BadRequest("La fecha de ingreso está en el futuro.");
+
+    TimeSpan duracion = fechaEgreso - estadia.Ingreso;
+
+    double horas = Math.Max(
+        1,
+        Math.Ceiling(duracion.TotalHours));
+
+    decimal montoCalculado =
+        (decimal)horas * tipoPlaza.PrecioXHora;
+
+    if (montoCalculado > 99999999.99m)
+        return BadRequest("El importe supera el máximo permitido.");
+
+    var pago = new Pago
+    {
+        ID_Estadia = estadia.ID_Estadia,
+        FechaEmision = fechaEgreso,
+        PrecioXHoraAplicado = tipoPlaza.PrecioXHora,
+        MontoTotal = montoCalculado,
+        ComprobanteUrl = null,
+        Estadia = estadia
+    };
+
+    // Se mantiene la subida actual.
+    // La validación del archivo será el siguiente cambio.
+    if (comprobanteFile != null && comprobanteFile.Length > 0)
+    {
+        string uploadsFolder = Path.Combine(
+            environment.WebRootPath,
+            "uploads",
+            "comprobantes");
+
+        Directory.CreateDirectory(uploadsFolder);
+
+        string uniqueFileName =
+            $"{Guid.NewGuid()}_{Path.GetFileName(comprobanteFile.FileName)}";
+
+        string filePath = Path.Combine(
+            uploadsFolder,
+            uniqueFileName);
+
+        using (var fileStream =
+            new FileStream(filePath, FileMode.CreateNew))
         {
-            var estadia = repositorioEstadia.ObtenerPorId(pago.ID_Estadia);
-            if (estadia == null) return NotFound();
-
-            if (ModelState.IsValid)
-            {
-                // Manejo de archivo subido (Comprobante)
-                if (comprobanteFile != null && comprobanteFile.Length > 0)
-                {
-                    string uploadsFolder = Path.Combine(environment.WebRootPath, "uploads", "comprobantes");
-                    if (!Directory.Exists(uploadsFolder))
-                    {
-                        Directory.CreateDirectory(uploadsFolder);
-                    }
-
-                    string uniqueFileName = $"{Guid.NewGuid()}_{Path.GetFileName(comprobanteFile.FileName)}";
-                    string filePath = Path.Combine(uploadsFolder, uniqueFileName);
-
-                    using (var fileStream = new FileStream(filePath, FileMode.Create))
-                    {
-                        await comprobanteFile.CopyToAsync(fileStream);
-                    }
-
-                    pago.ComprobanteUrl = $"/uploads/comprobantes/{uniqueFileName}";
-                }
-
-                // 1. Guardar el Pago
-                int idPago = repositorioPago.Alta(pago);
-
-                if (idPago > 0)
-                {
-                    // 2. Registrar salida utilizando el método existente en el repositorio de Estadía
-                    repositorioEstadia.RegistrarSalida(pago.ID_Estadia, pago.FechaEmision);
-
-                    TempData["SuccessMessage"] = $"Cobro N° {idPago} registrado exitosamente. La estadía fue finalizada.";
-                    return RedirectToAction(nameof(Index));
-                }
-                else
-                {
-                    TempData["ErrorMessage"] = "Ocurrió un error al registrar el pago.";
-                }
-            }
-
-            pago.Estadia = estadia;
-            return View(pago);
+            await comprobanteFile.CopyToAsync(fileStream);
         }
+
+        pago.ComprobanteUrl =
+            $"/uploads/comprobantes/{uniqueFileName}";
+    }
+
+    int idPago = repositorioPago.Alta(pago);
+
+    if (idPago > 0)
+    {
+        repositorioEstadia.RegistrarSalida(
+            pago.ID_Estadia,
+            pago.FechaEmision);
+
+        TempData["SuccessMessage"] =
+            $"Cobro N° {idPago} registrado exitosamente. " +
+            "La estadía fue finalizada.";
+
+        return RedirectToAction(nameof(Index));
+    }
+
+    ViewBag.HorasCobradas = horas;
+    ViewBag.DuracionReal =
+        $"{(int)duracion.TotalHours}h {duracion.Minutes}m";
+
+    ModelState.AddModelError(
+        "",
+        "Ocurrió un error al registrar el pago.");
+
+    return View(pago);
+}
 
         // GET: Pago/Details/5
         public IActionResult Details(int id)

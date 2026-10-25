@@ -21,10 +21,10 @@
                 </div>
 
                 <form asp-action="Cobrar" method="post" enctype="multipart/form-data">
-                    <input type="hidden" asp-for="ID_Estadia" />
-                    <input type="hidden" asp-for="FechaEmision" />
-                    <input type="hidden" asp-for="PrecioXHoraAplicado" />
-                    <input type="hidden" asp-for="MontoTotal" />
+                    <div asp-validation-summary="All"
+     class="text-danger mb-3"></div>
+
+<input type="hidden" asp-for="ID_Estadia" />
 
                     <div class="mb-3">
                         <label class="form-label">Tarifa Aplicada</label>
