@@ -19,31 +19,38 @@ namespace Estacionamiento_grupo_9.Controllers
         }
 
         // GET: Cliente (con búsqueda y paginado por servidor)
-        public IActionResult Index(string? busqueda, int pagina = 1)
-        {
-            if (pagina < 1) pagina = 1;
+      public IActionResult Index(string? busqueda, int pagina = 1)
+{
+    string filtro = (busqueda ?? "").Trim();
 
-            IList<Cliente> clientes;
-            int totalRegistros;
+    if (filtro.Length > 100)
+    {
+        return BadRequest(
+            "La búsqueda admite hasta 100 caracteres.");
+    }
 
-            if (!string.IsNullOrWhiteSpace(busqueda))
-            {
-                clientes = repositorioCliente.Buscar(busqueda);
-                totalRegistros = clientes.Count;
-                ViewBag.Busqueda = busqueda;
-            }
-            else
-            {
-                clientes = repositorioCliente.ObtenerLista(pagina, TAMANO_PAGINA);
-                totalRegistros = repositorioCliente.ObtenerCantidad();
-            }
+    int totalRegistros =
+        repositorioCliente.ObtenerCantidad(filtro);
 
-            ViewBag.PaginaActual = pagina;
-            ViewBag.TotalPaginas = (int)Math.Ceiling((double)totalRegistros / TAMANO_PAGINA);
-            ViewBag.TotalRegistros = totalRegistros;
+    int totalPaginas = Math.Max(
+        1,
+        (int)Math.Ceiling(
+            (double)totalRegistros / TAMANO_PAGINA));
 
-            return View(clientes);
-        }
+    pagina = Math.Clamp(pagina, 1, totalPaginas);
+
+    var clientes = repositorioCliente.ObtenerLista(
+        pagina,
+        TAMANO_PAGINA,
+        filtro);
+
+    ViewBag.PaginaActual = pagina;
+    ViewBag.TotalPaginas = totalPaginas;
+    ViewBag.TotalRegistros = totalRegistros;
+    ViewBag.Busqueda = filtro;
+
+    return View(clientes);
+}
 
         // GET: Cliente/Details/AA123CD
         public IActionResult Details(string id)

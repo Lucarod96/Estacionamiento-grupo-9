@@ -111,57 +111,80 @@ namespace Estacionamiento_grupo_9.Models
             return cliente;
         }
 
-        public IList<Cliente> ObtenerLista(int paginaNro, int tamPagina)
+       public IList<Cliente> ObtenerLista(
+    int paginaNro,
+    int tamPagina,
+    string busqueda = "")
+{
+    var lista = new List<Cliente>();
+    int offset = (paginaNro - 1) * tamPagina;
+
+    using var connection = new MySqlConnection(connectionString);
+
+    string sql = @"
+        SELECT Patente, Nombre, Apellido, Telefono
+        FROM cliente
+        WHERE Patente LIKE @busqueda
+           OR Nombre LIKE @busqueda
+           OR Apellido LIKE @busqueda
+           OR Telefono LIKE @busqueda
+        ORDER BY Apellido, Nombre, Patente
+        LIMIT @limit OFFSET @offset;";
+
+    using var command = new MySqlCommand(sql, connection);
+
+    command.Parameters.AddWithValue(
+        "@busqueda", "%" + busqueda.Trim() + "%");
+
+    command.Parameters.AddWithValue("@limit", tamPagina);
+    command.Parameters.AddWithValue("@offset", offset);
+
+    connection.Open();
+
+    using var reader = command.ExecuteReader();
+
+    while (reader.Read())
+    {
+        lista.Add(new Cliente
         {
-            var lista = new List<Cliente>();
-            int offset = (paginaNro - 1) * tamPagina;
+            Patente = reader.GetString(
+                reader.GetOrdinal("Patente")),
 
-            using (var connection = new MySqlConnection(connectionString))
-            {
-                string sql = @"SELECT Patente, Nombre, Apellido, Telefono 
-                               FROM Cliente 
-                               ORDER BY Apellido, Nombre 
-                               LIMIT @limit OFFSET @offset;";
+            Nombre = reader.GetString(
+                reader.GetOrdinal("Nombre")),
 
-                using (var command = new MySqlCommand(sql, connection))
-                {
-                    command.Parameters.AddWithValue("@limit", tamPagina);
-                    command.Parameters.AddWithValue("@offset", offset);
-                    connection.Open();
+            Apellido = reader.GetString(
+                reader.GetOrdinal("Apellido")),
 
-                    using (var reader = command.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            lista.Add(new Cliente
-                            {
-                                Patente = reader.GetString(reader.GetOrdinal("Patente")),
-                                Nombre = reader.GetString(reader.GetOrdinal("Nombre")),
-                                Apellido = reader.GetString(reader.GetOrdinal("Apellido")),
-                                Telefono = reader.GetString(reader.GetOrdinal("Telefono"))
-                            });
-                        }
-                    }
-                }
-            }
-            return lista;
-        }
+            Telefono = reader.GetString(
+                reader.GetOrdinal("Telefono"))
+        });
+    }
 
-        public int ObtenerCantidad()
-        {
-            int cantidad = 0;
-            using (var connection = new MySqlConnection(connectionString))
-            {
-                string sql = @"SELECT COUNT(*) FROM Cliente;";
+    return lista;
+}
 
-                using (var command = new MySqlCommand(sql, connection))
-                {
-                    connection.Open();
-                    cantidad = Convert.ToInt32(command.ExecuteScalar());
-                }
-            }
-            return cantidad;
-        }
+        public int ObtenerCantidad(string busqueda = "")
+{
+    using var connection = new MySqlConnection(connectionString);
+
+    string sql = @"
+        SELECT COUNT(*)
+        FROM cliente
+        WHERE Patente LIKE @busqueda
+           OR Nombre LIKE @busqueda
+           OR Apellido LIKE @busqueda
+           OR Telefono LIKE @busqueda;";
+
+    using var command = new MySqlCommand(sql, connection);
+
+    command.Parameters.AddWithValue(
+        "@busqueda", "%" + busqueda.Trim() + "%");
+
+    connection.Open();
+
+    return Convert.ToInt32(command.ExecuteScalar());
+}
 
         public IList<Cliente> Buscar(string busqueda)
         {
