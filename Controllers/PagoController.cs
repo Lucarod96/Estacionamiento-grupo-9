@@ -225,13 +225,28 @@ public async Task<IActionResult> Cobrar(
             $"/uploads/comprobantes/{uniqueFileName}";
     }
 
-    int idPago = repositorioPago.Alta(pago);
+   int idPago;
+
+try
+{
+    idPago = repositorioPago.AltaConSalida(pago);
+}
+catch (InvalidOperationException ex)
+{
+    TempData["ErrorMessage"] = ex.Message;
+    return RedirectToAction(nameof(Index));
+}
+catch (MySql.Data.MySqlClient.MySqlException ex)
+    when (ex.Number == 1062)
+{
+    TempData["ErrorMessage"] =
+        "Esta estadía ya tiene un pago registrado.";
+
+    return RedirectToAction(nameof(Index));
+}
 
     if (idPago > 0)
     {
-        repositorioEstadia.RegistrarSalida(
-            pago.ID_Estadia,
-            pago.FechaEmision);
 
         TempData["SuccessMessage"] =
             $"Cobro N° {idPago} registrado exitosamente. " +

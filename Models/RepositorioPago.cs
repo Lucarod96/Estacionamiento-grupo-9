@@ -15,7 +15,81 @@ namespace Estacionamiento_grupo_9.Models
                 ?? configuration.GetConnectionString("DefaultConnection") 
                 ?? throw new InvalidOperationException("No se encontró la cadena de conexión 'MySql' en appsettings.json.");
         }
+public int AltaConSalida(Pago pago)
+{
+    using var connection = new MySqlConnection(connectionString);
+    connection.Open();
 
+    using var transaction = connection.BeginTransaction();
+
+    try
+    {
+        string sqlSalida = @"
+            UPDATE estadia
+            SET Egreso = @egreso, Ocupado = 0
+            WHERE ID_Estadia = @idEstadia
+              AND Ocupado = 1
+              AND Egreso IS NULL
+              AND Ingreso <= @egreso;";
+
+        using (var command = new MySqlCommand(
+            sqlSalida, connection, transaction))
+        {
+            command.Parameters.AddWithValue(
+                "@egreso", pago.FechaEmision);
+
+            command.Parameters.AddWithValue(
+                "@idEstadia", pago.ID_Estadia);
+
+            if (command.ExecuteNonQuery() != 1)
+            {
+                throw new InvalidOperationException(
+                    "La estadía ya fue finalizada o no admite el cobro.");
+            }
+        }
+
+        string sqlPago = @"
+            INSERT INTO Pago
+                (ID_Estadia, FechaEmision,
+                 PrecioXHoraAplicado, MontoTotal, ComprobanteUrl)
+            VALUES
+                (@idEstadia, @fechaEmision,
+                 @precioXHora, @montoTotal, @comprobanteUrl);";
+
+        int idPago;
+
+        using (var command = new MySqlCommand(
+            sqlPago, connection, transaction))
+        {
+            command.Parameters.AddWithValue(
+                "@idEstadia", pago.ID_Estadia);
+
+            command.Parameters.AddWithValue(
+                "@fechaEmision", pago.FechaEmision);
+
+            command.Parameters.AddWithValue(
+                "@precioXHora", pago.PrecioXHoraAplicado);
+
+            command.Parameters.AddWithValue(
+                "@montoTotal", pago.MontoTotal);
+
+            command.Parameters.AddWithValue(
+                "@comprobanteUrl",
+                (object?)pago.ComprobanteUrl ?? DBNull.Value);
+
+            command.ExecuteNonQuery();
+            idPago = checked((int)command.LastInsertedId);
+        }
+
+        transaction.Commit();
+        return idPago;
+    }
+    catch
+    {
+        transaction.Rollback();
+        throw;
+    }
+}
         public int Alta(Pago pago)
         {
             int res = -1;

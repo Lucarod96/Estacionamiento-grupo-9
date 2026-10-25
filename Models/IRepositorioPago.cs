@@ -5,6 +5,8 @@ namespace Estacionamiento_grupo_9.Models
     public interface IRepositorioPago
     {
         int Alta(Pago pago);
+        
+        int AltaConSalida(Pago pago);
         Pago? ObtenerPorId(int id);
         Pago? ObtenerPorEstadiaId(int estadiaId);
 
