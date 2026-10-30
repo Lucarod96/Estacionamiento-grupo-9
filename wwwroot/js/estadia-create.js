@@ -99,7 +99,13 @@
             minimo: 2,
             textoVacio: "No hay clientes con esa patente. Registralo primero en Clientes.",
             texto: function (c) { return c.patente + " — " + c.apellido + ", " + c.nombre; },
-            alElegir: function (c) { inputPatente.value = c.patente; }
+            alElegir: function (c) {
+    inputPatente.value = c.patente;
+
+    if (window.jQuery && window.jQuery.validator) {
+        window.jQuery(inputPatente).valid();
+    }
+}
         });
 
         function etiquetaPlaza(p) {
