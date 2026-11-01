@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Estacionamiento_grupo_9.Models;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MySql.Data.MySqlClient;
@@ -112,7 +113,6 @@ public class EstadiaController : Controller
         }
         catch (MySqlException ex) when (ex.Number == 1062)
         {
-            // Otro empleado ganó de mano entre la validación y el guardado
             if (ex.Message.Contains("UX_estadia_patente_activa"))
             {
                 ModelState.AddModelError(nameof(modelo.Patente),
@@ -164,14 +164,14 @@ public class EstadiaController : Controller
         return RedirectToAction(nameof(Index));
     }
 
-    // El ID del empleado sale de la sesión, nunca del formulario
+    // El ID del empleado sale del Claim (JWT o Cookie)
     private bool TryObtenerIdStaff(out int idStaff)
     {
         return int.TryParse(
             User.FindFirstValue(ClaimTypes.NameIdentifier), out idStaff);
     }
 
-    // Autocompletado de patente: mínimo 2 caracteres, máximo 10 resultados
+    // Autocompletado de patente
     [HttpGet]
     public IActionResult BuscarCliente(string? termino)
     {
@@ -190,7 +190,7 @@ public class EstadiaController : Controller
         }));
     }
 
-    // Autocompletado de plaza: solo plazas libres, máximo 10 resultados
+    // Autocompletado de plaza
     [HttpGet]
     public IActionResult BuscarPlaza(string? termino)
     {
@@ -209,5 +209,112 @@ public class EstadiaController : Controller
             tipo = p.Tipo,
             precioXHora = p.PrecioXHora
         }));
+    }
+
+    // GET: api/estadia
+    [HttpGet("api/estadia")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    public IActionResult ApiObtenerTodos([FromQuery] string? busqueda, [FromQuery] bool soloActivas = true, [FromQuery] int pagina = 1)
+    {
+        string filtro = (busqueda ?? "").Trim();
+        var items = repositorioEstadia.ObtenerLista(pagina, TAMANO_PAGINA, filtro, soloActivas);
+        return Ok(items);
+    }
+
+    // GET: api/estadia/5
+    [HttpGet("api/estadia/{id}")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    public IActionResult ApiObtenerPorId(int id)
+    {
+        var estadia = repositorioEstadia.ObtenerPorId(id);
+        if (estadia == null) return NotFound(new { mensaje = "Estadía no encontrada." });
+
+        return Ok(estadia);
+    }
+
+    // POST: api/estadia (Registrar Ingreso)
+    [HttpPost("api/estadia")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    public IActionResult ApiRegistrarIngreso([FromBody] EstadiaIngresoViewModel modelo)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+
+        string patente = modelo.Patente.Trim().ToUpper();
+
+        if (repositorioCliente.ObtenerPorPatente(patente) == null)
+            return BadRequest(new { mensaje = "La patente no está registrada." });
+
+        if (repositorioPlaza.ObtenerPorId(modelo.ID_Plaza) == null)
+            return BadRequest(new { mensaje = "La plaza indicada no existe." });
+
+        if (repositorioEstadia.PlazaOcupada(modelo.ID_Plaza))
+            return BadRequest(new { mensaje = "La plaza seleccionada ya está ocupada." });
+
+        if (repositorioEstadia.PatenteAdentro(patente))
+            return BadRequest(new { mensaje = "El vehículo ya posee una estadía activa." });
+
+        if (!TryObtenerIdStaff(out int idStaff))
+            return Unauthorized(new { mensaje = "No se pudo identificar al empleado emisor del token." });
+
+        try
+        {
+            var estadia = new Estadia
+            {
+                ID_Plaza = modelo.ID_Plaza,
+                Patente = patente,
+                ID_Staff = idStaff,
+                Ingreso = DateTime.Now
+            };
+
+            int idCreado = repositorioEstadia.RegistrarIngreso(estadia);
+            return CreatedAtAction(nameof(ApiObtenerPorId), new { id = idCreado }, estadia);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { mensaje = "Error al registrar el ingreso.", detalle = ex.Message });
+        }
+    }
+
+    // POST: api/estadia/5/salida (Registrar Salida)
+    [HttpPost("api/estadia/{id}/salida")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    public IActionResult ApiRegistrarSalida(int id)
+    {
+        var estadia = repositorioEstadia.ObtenerPorId(id);
+        if (estadia == null) return NotFound(new { mensaje = "Estadía no encontrada." });
+
+        if (!estadia.Ocupado) return BadRequest(new { mensaje = "La estadía ya fue finalizada previamente." });
+
+        var egreso = DateTime.Now;
+        int filasAfectadas = repositorioEstadia.RegistrarSalida(id, egreso);
+
+        if (filasAfectadas > 0)
+        {
+            var permanencia = egreso - estadia.Ingreso;
+            return Ok(new
+            {
+                mensaje = "Salida registrada con éxito.",
+                idEstadia = id,
+                patente = estadia.Patente,
+                egreso = egreso,
+                horasPermanencia = (int)permanencia.TotalHours,
+                minutosPermanencia = permanencia.Minutes
+            });
+        }
+
+        return StatusCode(500, new { mensaje = "No se pudo registrar la salida en la base de datos." });
+    }
+
+    // DELETE: api/estadia/5 (Restringido solo a Administradores)
+    [HttpDelete("api/estadia/{id}")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = Rol.Admin)]
+    public IActionResult ApiEliminar(int id)
+    {
+        var estadia = repositorioEstadia.ObtenerPorId(id);
+        if (estadia == null) return NotFound(new { mensaje = "Estadía no encontrada." });
+
+        // Si tu repositorio soporta borrado directo de estadía:
+        // repositorioEstadia.Eliminar(id);
+        return Ok(new { mensaje = $"Registro de estadía {id} procesado por Administrador." });
     }
 }

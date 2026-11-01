@@ -3,10 +3,10 @@ using Estacionamiento_grupo_9.Models;
 using System;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 namespace Estacionamiento_grupo_9.Controllers
 {
-    
     [Authorize(Roles = Rol.Admin + "," + Rol.Operador)]
     public class ClienteController : Controller
     {
@@ -19,38 +19,35 @@ namespace Estacionamiento_grupo_9.Controllers
         }
 
         // GET: Cliente (con búsqueda y paginado por servidor)
-      public IActionResult Index(string? busqueda, int pagina = 1)
-{
-    string filtro = (busqueda ?? "").Trim();
+        public IActionResult Index(string? busqueda, int pagina = 1)
+        {
+            string filtro = (busqueda ?? "").Trim();
 
-    if (filtro.Length > 100)
-    {
-        return BadRequest(
-            "La búsqueda admite hasta 100 caracteres.");
-    }
+            if (filtro.Length > 100)
+            {
+                return BadRequest("La búsqueda admite hasta 100 caracteres.");
+            }
 
-    int totalRegistros =
-        repositorioCliente.ObtenerCantidad(filtro);
+            int totalRegistros = repositorioCliente.ObtenerCantidad(filtro);
 
-    int totalPaginas = Math.Max(
-        1,
-        (int)Math.Ceiling(
-            (double)totalRegistros / TAMANO_PAGINA));
+            int totalPaginas = Math.Max(
+                1,
+                (int)Math.Ceiling((double)totalRegistros / TAMANO_PAGINA));
 
-    pagina = Math.Clamp(pagina, 1, totalPaginas);
+            pagina = Math.Clamp(pagina, 1, totalPaginas);
 
-    var clientes = repositorioCliente.ObtenerLista(
-        pagina,
-        TAMANO_PAGINA,
-        filtro);
+            var clientes = repositorioCliente.ObtenerLista(
+                pagina,
+                TAMANO_PAGINA,
+                filtro);
 
-    ViewBag.PaginaActual = pagina;
-    ViewBag.TotalPaginas = totalPaginas;
-    ViewBag.TotalRegistros = totalRegistros;
-    ViewBag.Busqueda = filtro;
+            ViewBag.PaginaActual = pagina;
+            ViewBag.TotalPaginas = totalPaginas;
+            ViewBag.TotalRegistros = totalRegistros;
+            ViewBag.Busqueda = filtro;
 
-    return View(clientes);
-}
+            return View(clientes);
+        }
 
         // GET: Cliente/Details/AA123CD
         public IActionResult Details(string id)
@@ -76,7 +73,6 @@ namespace Estacionamiento_grupo_9.Controllers
         {
             if (ModelState.IsValid)
             {
-                // Verificar si ya existe un cliente con esa patente
                 var existente = repositorioCliente.ObtenerPorPatente(cliente.Patente);
                 if (existente != null)
                 {
@@ -166,6 +162,90 @@ namespace Estacionamiento_grupo_9.Controllers
             }
 
             return RedirectToAction(nameof(Index));
+        }
+
+        // GET: api/cliente
+        [HttpGet("api/cliente")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        public IActionResult ApiObtenerTodos([FromQuery] string? busqueda, [FromQuery] int pagina = 1)
+        {
+            string filtro = (busqueda ?? "").Trim();
+            var clientes = repositorioCliente.ObtenerLista(pagina, TAMANO_PAGINA, filtro);
+            return Ok(clientes);
+        }
+
+        // GET: api/cliente/AA123CD
+        [HttpGet("api/cliente/{id}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        public IActionResult ApiObtenerPorPatente(string id)
+        {
+            if (string.IsNullOrEmpty(id)) return BadRequest(new { mensaje = "La patente es requerida." });
+
+            var cliente = repositorioCliente.ObtenerPorPatente(id);
+            if (cliente == null) return NotFound(new { mensaje = "Cliente no encontrado." });
+
+            return Ok(cliente);
+        }
+
+        // POST: api/cliente
+        [HttpPost("api/cliente")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        public IActionResult ApiCrear([FromBody] Cliente cliente)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            var existente = repositorioCliente.ObtenerPorPatente(cliente.Patente);
+            if (existente != null)
+            {
+                return BadRequest(new { mensaje = "Ya existe un vehículo registrado con esta patente." });
+            }
+
+            int res = repositorioCliente.Alta(cliente);
+            if (res > 0)
+            {
+                return CreatedAtAction(nameof(ApiObtenerPorPatente), new { id = cliente.Patente }, cliente);
+            }
+
+            return StatusCode(500, new { mensaje = "Error al intentar guardar el cliente." });
+        }
+
+        // PUT: api/cliente/AA123CD
+        [HttpPut("api/cliente/{id}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        public IActionResult ApiModificar(string id, [FromBody] Cliente cliente)
+        {
+            if (id != cliente.Patente) return BadRequest(new { mensaje = "La patente especificada no coincide." });
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            int res = repositorioCliente.Modificacion(cliente);
+            if (res > 0)
+            {
+                return Ok(new { mensaje = "Cliente actualizado con éxito.", cliente });
+            }
+
+            return StatusCode(500, new { mensaje = "No se pudieron guardar los cambios." });
+        }
+
+        // DELETE: api/cliente/AA123CD (Restringido solo a Administradores)
+        [HttpDelete("api/cliente/{id}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = Rol.Admin)]
+        public IActionResult ApiEliminar(string id)
+        {
+            if (string.IsNullOrEmpty(id)) return BadRequest(new { mensaje = "La patente es requerida." });
+
+            try
+            {
+                int res = repositorioCliente.Baja(id);
+                if (res > 0)
+                {
+                    return Ok(new { mensaje = "Cliente eliminado del sistema con éxito." });
+                }
+                return NotFound(new { mensaje = "No se encontró el cliente a eliminar." });
+            }
+            catch (Exception)
+            {
+                return BadRequest(new { mensaje = "No se puede eliminar el cliente porque posee estadías o registros asociados." });
+            }
         }
     }
 }

@@ -1,0 +1,115 @@
+{
+  "info": {
+    "name": "Estacionamiento_API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Auth - Login",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"admin\",\n  \"password\": \"Admin123\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:5022/api/auth/login",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "5022",
+          "path": [
+            "api",
+            "auth",
+            "login"
+          ]
+        }
+      }
+    },
+    {
+      "name": "2. Cliente - Obtener Todos",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5022/api/cliente",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "5022",
+          "path": [
+            "api",
+            "cliente"
+          ]
+        }
+      }
+    },
+    {
+      "name": "3. Seguridad - Prueba Sin Token (401)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5022/api/cliente",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "5022",
+          "path": [
+            "api",
+            "cliente"
+          ]
+        }
+      }
+    },
+    {
+      "name": "4. Cliente - Eliminar (Admin)",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5022/api/cliente/AA123CD",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "5022",
+          "path": [
+            "api",
+            "cliente",
+            "AA123CD"
+          ]
+        }
+      }
+    }
+  ]
+}

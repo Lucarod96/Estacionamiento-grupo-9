@@ -1,15 +1,16 @@
 using Estacionamiento_grupo_9.Models;
 using Estacionamiento_grupo_9.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace Estacionamiento_grupo_9.Controllers
 {
     // Todo el controlador requiere estar logueado, salvo las acciones con [AllowAnonymous].
-    // La gestión de otros usuarios (Index/Create/Edit/Delete) es solo para el rol Admin.
     [Authorize]
     public class StaffController : Controller
     {
@@ -27,6 +28,10 @@ namespace Estacionamiento_grupo_9.Controllers
             this.signInManager = signInManager;
             this.avatarService = avatarService;
         }
+
+        // ==========================================
+        // === VISTAS Y RUTAS MVC (Autenticación Cookie) ===
+        // ==========================================
 
         // ---------------------------------------------------------------
         // LOGIN / LOGOUT
@@ -123,13 +128,13 @@ namespace Estacionamiento_grupo_9.Controllers
             var resultado = await userManager.UpdateAsync(user);
             if (!resultado.Succeeded)
             {
-                avatarService.Eliminar(user.AvatarUrl); // borramos el archivo nuevo que quedó huérfano
+                avatarService.Eliminar(user.AvatarUrl);
                 TempData["ErrorMessage"] = "No se pudo actualizar el avatar.";
                 return RedirectToAction(nameof(Perfil));
             }
 
             avatarService.Eliminar(anterior);
-            await signInManager.RefreshSignInAsync(user); // actualiza el claim del avatar en el navbar
+            await signInManager.RefreshSignInAsync(user);
 
             TempData["SuccessMessage"] = "Avatar actualizado correctamente.";
             return RedirectToAction(nameof(Perfil));
@@ -148,7 +153,6 @@ namespace Estacionamiento_grupo_9.Controllers
             int totalPaginas = Math.Max(1, (int)Math.Ceiling((double)total / TAMANO_PAGINA));
             if (pagina > totalPaginas) pagina = totalPaginas;
 
-            // Solo se trae la página pedida (Skip/Take se traduce a LIMIT/OFFSET)
             var usuarios = await userManager.Users
                 .OrderBy(u => u.UserName)
                 .Skip((pagina - 1) * TAMANO_PAGINA)
@@ -214,7 +218,7 @@ namespace Estacionamiento_grupo_9.Controllers
             var rolAsignado = await userManager.AddToRoleAsync(user, model.Rol);
             if (!rolAsignado.Succeeded)
             {
-                await userManager.DeleteAsync(user); // no dejamos usuarios sin rol
+                await userManager.DeleteAsync(user);
                 foreach (var e in rolAsignado.Errors) ModelState.AddModelError(string.Empty, e.Description);
                 return View(model);
             }
@@ -260,7 +264,6 @@ namespace Estacionamiento_grupo_9.Controllers
             var user = await userManager.FindByIdAsync(id.ToString());
             if (user == null) return NotFound();
 
-            // Se vuelven a cargar porque no viajan en el formulario
             model.UserName = user.UserName;
             model.AvatarUrl = user.AvatarUrl;
             CargarRoles(model.Rol);
@@ -268,7 +271,6 @@ namespace Estacionamiento_grupo_9.Controllers
             if (!Rol.Todos.Contains(model.Rol))
                 ModelState.AddModelError(nameof(model.Rol), "El rol seleccionado no es válido.");
 
-            // Evita que el único admin se deje a sí mismo sin permisos
             if (user.Id == IdActual() && model.Rol != Rol.Admin)
                 ModelState.AddModelError(nameof(model.Rol), "No podés quitarte el rol Admin a vos mismo.");
 
@@ -281,7 +283,6 @@ namespace Estacionamiento_grupo_9.Controllers
 
             if (!ModelState.IsValid) return View(model);
 
-            // Email
             var nuevoEmail = model.Email.Trim();
             if (!string.Equals(user.Email, nuevoEmail, StringComparison.OrdinalIgnoreCase))
             {
@@ -293,7 +294,6 @@ namespace Estacionamiento_grupo_9.Controllers
                 }
             }
 
-            // Rol
             var rolesActuales = await userManager.GetRolesAsync(user);
             if (!rolesActuales.Contains(model.Rol) || rolesActuales.Count > 1)
             {
@@ -301,7 +301,6 @@ namespace Estacionamiento_grupo_9.Controllers
                 await userManager.AddToRoleAsync(user, model.Rol);
             }
 
-            // Avatar
             if (hayAvatar)
             {
                 var anterior = user.AvatarUrl;
@@ -320,7 +319,6 @@ namespace Estacionamiento_grupo_9.Controllers
                 }
             }
 
-            // Si el admin se edita a sí mismo, refrescamos su sesión (claims)
             if (user.Id == IdActual())
                 await signInManager.RefreshSignInAsync(user);
 
@@ -371,6 +369,122 @@ namespace Estacionamiento_grupo_9.Controllers
             }
 
             return RedirectToAction(nameof(Index));
+        }
+
+        // =========================================================================
+        // === ENDPOINTS WEB API REST (Autenticación JWT para Postman / Clientes) ===
+        // =========================================================================
+
+        // GET: api/staff/perfil (Perfil del usuario autenticado)
+        [HttpGet("api/staff/perfil")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        public async Task<IActionResult> ApiPerfil()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId)) return Unauthorized(new { mensaje = "Token inválido." });
+
+            var user = await userManager.FindByIdAsync(userId);
+            if (user == null) return NotFound(new { mensaje = "Usuario no encontrado." });
+
+            var perfil = await ConstruirPerfilAsync(user);
+            return Ok(perfil);
+        }
+
+        // POST: api/staff/perfil/avatar (Actualizar avatar del usuario autenticado)
+        [HttpPost("api/staff/perfil/avatar")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        public async Task<IActionResult> ApiActualizarAvatar([FromForm] IFormFile? avatarFile)
+        {
+            if (avatarFile == null || avatarFile.Length == 0)
+                return BadRequest(new { mensaje = "Debe adjuntar una imagen válida." });
+
+            var error = avatarService.Validar(avatarFile);
+            if (error != null) return BadRequest(new { mensaje = error });
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var user = await userManager.FindByIdAsync(userId ?? string.Empty);
+            if (user == null) return NotFound(new { mensaje = "Usuario no encontrado." });
+
+            var anterior = user.AvatarUrl;
+            user.AvatarUrl = await avatarService.GuardarAsync(avatarFile);
+
+            var resultado = await userManager.UpdateAsync(user);
+            if (!resultado.Succeeded)
+            {
+                avatarService.Eliminar(user.AvatarUrl);
+                return StatusCode(500, new { mensaje = "No se pudo actualizar el avatar en la base de datos." });
+            }
+
+            avatarService.Eliminar(anterior);
+            return Ok(new { mensaje = "Avatar actualizado correctamente.", avatarUrl = user.AvatarUrl });
+        }
+
+        // GET: api/staff (Listar personal - Restringido a Administradores)
+        [HttpGet("api/staff")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = Rol.Admin)]
+        public async Task<IActionResult> ApiObtenerTodos([FromQuery] int pagina = 1)
+        {
+            if (pagina < 1) pagina = 1;
+
+            int total = await userManager.Users.CountAsync();
+            int totalPaginas = Math.Max(1, (int)Math.Ceiling((double)total / TAMANO_PAGINA));
+            if (pagina > totalPaginas) pagina = totalPaginas;
+
+            var usuarios = await userManager.Users
+                .OrderBy(u => u.UserName)
+                .Skip((pagina - 1) * TAMANO_PAGINA)
+                .Take(TAMANO_PAGINA)
+                .ToListAsync();
+
+            var items = new List<StaffListItem>();
+            foreach (var u in usuarios)
+            {
+                items.Add(await ConstruirItemAsync(u));
+            }
+
+            return Ok(new { items, pagina, totalPaginas, totalRegistros = total });
+        }
+
+        // GET: api/staff/5 (Obtener detalle de personal por ID - Restringido a Administradores)
+        [HttpGet("api/staff/{id}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = Rol.Admin)]
+        public async Task<IActionResult> ApiObtenerPorId(int id)
+        {
+            var user = await userManager.FindByIdAsync(id.ToString());
+            if (user == null) return NotFound(new { mensaje = "Usuario no encontrado." });
+
+            var item = await ConstruirItemAsync(user);
+            return Ok(item);
+        }
+
+        // DELETE: api/staff/5 (Eliminar personal - Restringido a Administradores)
+        [HttpDelete("api/staff/{id}")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = Rol.Admin)]
+        public async Task<IActionResult> ApiEliminar(int id)
+        {
+            var user = await userManager.FindByIdAsync(id.ToString());
+            if (user == null) return NotFound(new { mensaje = "Usuario no encontrado." });
+
+            var currentUserId = IdActual();
+            if (currentUserId.HasValue && user.Id == currentUserId.Value)
+            {
+                return BadRequest(new { mensaje = "No podés eliminar tu propio usuario." });
+            }
+
+            try
+            {
+                var resultado = await userManager.DeleteAsync(user);
+                if (resultado.Succeeded)
+                {
+                    avatarService.Eliminar(user.AvatarUrl);
+                    return Ok(new { mensaje = $"Usuario '{user.UserName}' eliminado correctamente." });
+                }
+                return StatusCode(500, new { mensaje = "No se pudo eliminar el usuario." });
+            }
+            catch (DbUpdateException)
+            {
+                return BadRequest(new { mensaje = "No se puede eliminar el usuario porque posee registros o estadías asociadas." });
+            }
         }
 
         // ---------------------------------------------------------------
