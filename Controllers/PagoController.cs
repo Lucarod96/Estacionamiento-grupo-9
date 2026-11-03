@@ -267,10 +267,35 @@ namespace Estacionamiento_grupo_9.Controllers
             var tipoPlaza = repositorioTipoDePlaza.ObtenerPorId(plaza.ID_TipoDePlaza);
             if (tipoPlaza == null) return BadRequest(new { mensaje = "El tipo de plaza no existe." });
 
+            if (tipoPlaza.PrecioXHora <= 0)
+            {
+                return BadRequest(new
+                {
+                    mensaje = "La tarifa debe ser mayor que cero."
+                });
+            }
+
             DateTime fechaEgreso = DateTime.Now;
+
+            if (estadia.Ingreso > fechaEgreso)
+            {
+                return BadRequest(new
+                {
+                    mensaje = "La fecha de ingreso está en el futuro."
+                });
+            }
+
             TimeSpan duracion = fechaEgreso - estadia.Ingreso;
             double horas = Math.Max(1, Math.Ceiling(duracion.TotalHours));
             decimal montoCalculado = (decimal)horas * tipoPlaza.PrecioXHora;
+
+            if (montoCalculado > 99999999.99m)
+            {
+                return BadRequest(new
+                {
+                    mensaje = "El importe supera el máximo permitido."
+                });
+            }
 
             var pago = new Pago
             {
