@@ -37,6 +37,8 @@
                 abierto: false,
                 nuevo: true,
                 form: {},
+                errores: {},
+                intentoGuardar: false,
 
                 tipos: [],
                 tiposAbiertos: false,
@@ -141,6 +143,8 @@
 
             abrirNuevo() {
                 this.limpiarTipos();
+                this.errores = {};
+                this.intentoGuardar = false;
 
                 this.form = esPlaza
                     ? {
@@ -247,9 +251,61 @@
                     body: JSON.stringify(datos)
                 };
             },
+                        validarTipo() {
+                const errores = {};
+                const id = this.form.id_TipoDePlaza;
+                const nombre = (this.form.tipo ?? "").trim();
+                const precio = this.form.precioXHora;
+
+                if (id === null || id === "" || id === undefined) {
+                    errores.id = "El ID es obligatorio.";
+                } else if (
+                    !Number.isInteger(Number(id)) ||
+                    Number(id) < 1 ||
+                    Number(id) > 2147483647
+                ) {
+                    errores.id = "El ID debe ser un entero mayor que cero.";
+                }
+
+                if (!nombre) {
+                    errores.tipo = "El tipo es obligatorio.";
+                } else if (nombre.length > 45) {
+                    errores.tipo = "El tipo admite hasta 45 caracteres.";
+                }
+
+                if (
+                    precio === null ||
+                    precio === "" ||
+                    precio === undefined
+                ) {
+                    errores.precio = "El precio por hora es obligatorio.";
+                } else if (
+                    !Number.isFinite(Number(precio)) ||
+                    Number(precio) < 0.01 ||
+                    Number(precio) > 99999999.99
+                ) {
+                    errores.precio =
+                        "El precio debe estar entre 0,01 y 99.999.999,99.";
+                } else if (
+                    Math.abs(
+                        Number(precio) * 100 -
+                        Math.round(Number(precio) * 100)
+                    ) > 0.000001
+                ) {
+                    errores.precio = "El precio admite hasta 2 decimales.";
+                }
+
+                this.errores = errores;
+                return Object.keys(errores).length === 0;
+            },
 
             async guardar() {
                 if (this.guardando) return;
+                                if (!esPlaza) {
+                    this.intentoGuardar = true;
+
+                    if (!this.validarTipo()) return;
+                }
 
                 if (esPlaza && !this.form.id_TipoDePlaza) {
                     this.error =

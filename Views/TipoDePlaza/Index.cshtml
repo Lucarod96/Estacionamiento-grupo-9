@@ -137,12 +137,15 @@
                     </h4>
                 </div>
 
-                <div class="card-body">
-                    <form v-on:submit.prevent="guardar">
+                <div class="card-body">   
+                 <form v-on:submit.prevent="guardar"
+                          v-on:input="intentoGuardar && validarTipo()"
+                          novalidate>                
+
                         <fieldset :disabled="guardando">
                             <div class="mb-3">
                                 <label for="tipo-id" class="form-label">ID</label>
-                                <input id="tipo-id"
+                                     <input id="tipo-id"
                                        class="form-control"
                                        type="number"
                                        min="1"
@@ -150,24 +153,34 @@
                                        v-model.number="form.id_TipoDePlaza"
                                        :readonly="!nuevo"
                                        required>
+                                <span class="text-danger small"
+                                      v-if="errores.id"
+                                      aria-live="polite">
+                                    {{ errores.id }}
+                                </span>
                             </div>
 
                             <div class="mb-3">
                                 <label for="tipo-nombre" class="form-label">
                                     Tipo
                                 </label>
-                                <input id="tipo-nombre"
+                                                               <input id="tipo-nombre"
                                        class="form-control"
                                        maxlength="45"
                                        v-model.trim="form.tipo"
                                        required>
+                                <span class="text-danger small"
+                                      v-if="errores.tipo"
+                                      aria-live="polite">
+                                    {{ errores.tipo }}
+                                </span>
                             </div>
 
                             <div class="mb-3">
                                 <label for="tipo-precio" class="form-label">
                                     Precio por hora
                                 </label>
-                                <input id="tipo-precio"
+                                                              <input id="tipo-precio"
                                        class="form-control"
                                        type="number"
                                        min="0.01"
@@ -175,6 +188,11 @@
                                        step="0.01"
                                        v-model.number="form.precioXHora"
                                        required>
+                                <span class="text-danger small"
+                                      v-if="errores.precio"
+                                      aria-live="polite">
+                                    {{ errores.precio }}
+                                </span>
                             </div>
 
                             <button type="submit" class="btn btn-primary">
