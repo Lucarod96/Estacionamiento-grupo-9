@@ -305,16 +305,16 @@ public class EstadiaController : Controller
         return StatusCode(500, new { mensaje = "No se pudo registrar la salida en la base de datos." });
     }
 
-    // DELETE: api/estadia/5 (Restringido solo a Administradores)
+    // Las estadías se conservan en el historial.
     [HttpDelete("api/estadia/{id}")]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = Rol.Admin)]
     public IActionResult ApiEliminar(int id)
     {
-        var estadia = repositorioEstadia.ObtenerPorId(id);
-        if (estadia == null) return NotFound(new { mensaje = "Estadía no encontrada." });
+        Response.Headers["Allow"] = "GET";
 
-        // Si tu repositorio soporta borrado directo de estadía:
-        // repositorioEstadia.Eliminar(id);
-        return Ok(new { mensaje = $"Registro de estadía {id} procesado por Administrador." });
+        return StatusCode(405, new
+        {
+            mensaje = "No se permite eliminar estadías registradas. Se conserva el historial de ingresos y salidas."
+        });
     }
 }

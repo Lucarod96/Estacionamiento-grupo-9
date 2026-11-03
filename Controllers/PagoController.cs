@@ -305,15 +305,17 @@ namespace Estacionamiento_grupo_9.Controllers
             return StatusCode(500, new { mensaje = "No se pudo registrar el pago en la base de datos." });
         }
 
-        // DELETE: api/pago/5 (Restringido solo a Administradores)
+               // Los pagos registrados se conservan en el historial.
         [HttpDelete("api/pago/{id}")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = Rol.Admin)]
         public IActionResult ApiEliminar(int id)
         {
-            var pago = repositorioPago.ObtenerPorId(id);
-            if (pago == null) return NotFound(new { mensaje = "Pago no encontrado." });
+            Response.Headers["Allow"] = "GET";
 
-            return Ok(new { mensaje = $"Registro de pago {id} procesado por Administrador." });
+            return StatusCode(405, new
+            {
+                mensaje = "No se permite eliminar pagos registrados. Se conserva el historial de cobros."
+            });
         }
 
         // Método auxiliar reutilizable para guardar y validar el comprobante
