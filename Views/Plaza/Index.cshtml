@@ -150,7 +150,9 @@
                 </div>
 
                 <div class="card-body">
-                    <form v-on:submit.prevent="guardar">
+                         <form v-on:submit.prevent="guardar"
+                          v-on:input="intentoGuardar && validarPlaza()"
+                          novalidate>
                         <fieldset :disabled="guardando">
 
                             <div class="mb-3">
@@ -166,6 +168,11 @@
                                        v-model.number="form.id_Plaza"
                                        :readonly="!nuevo"
                                        required>
+                                   <span class="text-danger small"
+                                      v-if="errores.id"
+                                      aria-live="polite">
+                                    {{ errores.id }}
+                                </span>
                             </div>
 
                             <div class="mb-3">
@@ -180,6 +187,11 @@
                                        max="200"
                                        v-model.number="form.piso"
                                        required>
+                                <span class="text-danger small"
+                                      v-if="errores.piso"
+                                      aria-live="polite">
+                                    {{ errores.piso }}
+                                </span>
                             </div>
 
                             <div class="mb-3">
@@ -192,6 +204,11 @@
                                        maxlength="45"
                                        v-model.trim="form.sector"
                                        required>
+                                      <span class="text-danger small"
+                                      v-if="errores.sector"
+                                      aria-live="polite">
+                                    {{ errores.sector }}
+                                </span>
                             </div>
 
                             <div class="mb-3">
@@ -207,6 +224,11 @@
                                         v-on:click="alternarTipos">
                                     {{ tipoSeleccionado || 'Seleccionar tipo de plaza' }}
                                 </button>
+                                    <span class="text-danger small"
+                                      v-if="errores.tipo"
+                                      aria-live="polite">
+                                    {{ errores.tipo }}
+                                </span>
 
                                 <div id="opciones-tipos"
                                      class="border rounded mt-1"

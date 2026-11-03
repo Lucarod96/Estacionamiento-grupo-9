@@ -235,6 +235,9 @@
                 this.limpiarTipos();
 
                 this.tipoSeleccionado = tipo.tipo;
+                                if (this.intentoGuardar) {
+                    this.validarPlaza();
+                }
             },
 
             opciones(datos) {
@@ -298,20 +301,60 @@
                 this.errores = errores;
                 return Object.keys(errores).length === 0;
             },
+                        validarPlaza() {
+                const errores = {};
+                const id = this.form.id_Plaza;
+                const piso = this.form.piso;
+                const sector = (this.form.sector ?? "").trim();
+                const tipo = this.form.id_TipoDePlaza;
+
+                if (id === null || id === "" || id === undefined) {
+                    errores.id = "El ID es obligatorio.";
+                } else if (
+                    !Number.isInteger(Number(id)) ||
+                    Number(id) < 1 ||
+                    Number(id) > 2147483647
+                ) {
+                    errores.id = "El ID debe ser un número entero mayor que cero.";
+                }
+
+                if (piso === null || piso === "" || piso === undefined) {
+                    errores.piso = "El piso es obligatorio.";
+                } else if (
+                    !Number.isInteger(Number(piso)) ||
+                    Number(piso) < 0 ||
+                    Number(piso) > 200
+                ) {
+                    errores.piso = "El piso debe ser un entero entre 0 y 200.";
+                }
+
+                if (!sector) {
+                    errores.sector = "El sector es obligatorio.";
+                } else if (sector.length > 45) {
+                    errores.sector = "El sector no puede superar los 45 caracteres.";
+                }
+
+                if (
+                    !Number.isInteger(Number(tipo)) ||
+                    Number(tipo) < 1 ||
+                    Number(tipo) > 2147483647
+                ) {
+                    errores.tipo = "Debés seleccionar un tipo de plaza.";
+                }
+
+                this.errores = errores;
+                return Object.keys(errores).length === 0;
+            },
 
             async guardar() {
                 if (this.guardando) return;
-                                if (!esPlaza) {
-                    this.intentoGuardar = true;
+                                 this.intentoGuardar = true;
 
-                    if (!this.validarTipo()) return;
-                }
+                const valido = esPlaza
+                    ? this.validarPlaza()
+                    : this.validarTipo();
 
-                if (esPlaza && !this.form.id_TipoDePlaza) {
-                    this.error =
-                        "Seleccioná un tipo de plaza.";
-                    return;
-                }
+                if (!valido) return;
 
                 this.guardando = true;
                 this.error = "";
