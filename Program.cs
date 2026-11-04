@@ -20,7 +20,8 @@ builder.Services.AddScoped<IRepositorioPago, RepositorioPago>();
 // --- Identity (Staff) ---
 var connectionString = builder.Configuration.GetConnectionString("MySql")
     ?? builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? throw new InvalidOperationException("No se encontró la cadena de conexión 'MySql' en appsettings.json.");
+    ?? throw new InvalidOperationException(
+        "Falta la cadena de conexión 'ConnectionStrings:MySql'. Configurala con 'dotnet user-secrets set' (ver README).");
 
 // Versión de MySQL fija para no necesitar conexión al arrancar.
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -44,7 +45,12 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.SlidingExpiration = true;
 });
 
-var jwtKey = builder.Configuration["Jwt:Key"] ?? "ClaveSecretaSuperSeguraYDeAlMenos32Caracteres!";
+var jwtKey = builder.Configuration["Jwt:Key"];
+if (string.IsNullOrWhiteSpace(jwtKey) || Encoding.UTF8.GetByteCount(jwtKey) < 32)
+{
+    throw new InvalidOperationException(
+        "Falta 'Jwt:Key' o tiene menos de 32 caracteres. Configurala con 'dotnet user-secrets set' (ver README).");
+}
 var jwtIssuer = builder.Configuration["Jwt:Issuer"];
 var jwtAudience = builder.Configuration["Jwt:Audience"];
 
@@ -59,7 +65,8 @@ builder.Services.AddAuthentication()
             ValidateIssuerSigningKey = true,
             ValidIssuer = jwtIssuer,
             ValidAudience = jwtAudience,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+            ClockSkew = TimeSpan.Zero
         };
     });
 

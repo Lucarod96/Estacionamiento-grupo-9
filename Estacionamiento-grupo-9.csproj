@@ -1,10 +1,11 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>Estacionamiento_grupo_9</RootNamespace>
+    <UserSecretsId>58d2a9e3-c1e7-42c5-91b4-7e6b8f530fa4</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>

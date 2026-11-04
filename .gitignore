@@ -4,3 +4,6 @@ obj/
 # Avatares subidos por los usuarios (no se versionan)
 wwwroot/uploads/avatars/*
 !wwwroot/uploads/avatars/.gitkeep
+
+# Comprobantes de pago subidos (no se versionan)
+wwwroot/uploads/comprobantes/*

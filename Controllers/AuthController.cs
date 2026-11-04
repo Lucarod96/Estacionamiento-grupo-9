@@ -36,7 +36,7 @@ namespace Estacionamiento_grupo_9.Controllers
             }
 
             // 1. Buscar usuario por Email o por UserName
-            var usuario = await _userManager.FindByEmailAsync(dto.Email) 
+            var usuario = await _userManager.FindByEmailAsync(dto.Email)
                        ?? await _userManager.FindByNameAsync(dto.Email);
 
             if (usuario == null)
@@ -69,7 +69,8 @@ namespace Estacionamiento_grupo_9.Controllers
 
         private string GenerarJwtToken(Staff usuario, string rol)
         {
-            var jwtKey = _config["Jwt:Key"] ?? "ClaveSecretaSuperSeguraYDeAlMenos32Caracteres!";
+            var jwtKey = _config["Jwt:Key"]
+                ?? throw new InvalidOperationException("Jwt:Key no está configurada.");
             var jwtIssuer = _config["Jwt:Issuer"];
             var jwtAudience = _config["Jwt:Audience"];
 
@@ -84,11 +85,13 @@ namespace Estacionamiento_grupo_9.Controllers
                 new Claim(ClaimTypes.Role, rol)
             };
 
+            int minutos = Math.Clamp(_config.GetValue<int>("Jwt:ExpireMinutes", 60), 1, 1440);
+
             var token = new JwtSecurityToken(
                 issuer: jwtIssuer,
                 audience: jwtAudience,
                 claims: claims,
-                expires: DateTime.UtcNow.AddHours(4),
+                expires: DateTime.UtcNow.AddMinutes(minutos),
                 signingCredentials: creds
             );
 

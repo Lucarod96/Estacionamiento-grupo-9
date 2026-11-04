@@ -26,10 +26,16 @@ namespace Estacionamiento_grupo_9.Data
 
             var userName = config["SeedAdmin:UserName"] ?? "admin";
             var email = config["SeedAdmin:Email"] ?? "admin@estacionamiento.local";
-            var password = config["SeedAdmin:Password"] ?? "Admin123";
+            var password = config["SeedAdmin:Password"];
 
             if (await userManager.FindByNameAsync(userName) == null)
             {
+                if (string.IsNullOrWhiteSpace(password))
+                {
+                    throw new InvalidOperationException(
+                        "No existe el usuario admin y falta 'SeedAdmin:Password'. Configurala con 'dotnet user-secrets set'.");
+                }
+
                 var admin = new Staff
                 {
                     UserName = userName,
