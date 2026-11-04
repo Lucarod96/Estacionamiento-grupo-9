@@ -13,7 +13,7 @@ public interface IRepositorioEstadia
     int RegistrarIngreso(Estadia modelo);
 
     // Devuelve 0 si la estadía no existe o ya estaba cerrada
-    int RegistrarSalida(int id, DateTime egreso);
+    //int RegistrarSalida(int id, DateTime egreso);
 
     bool PlazaOcupada(int idPlaza);
 

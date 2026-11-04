@@ -133,36 +133,36 @@ public class EstadiaController : Controller
         return RedirectToAction(nameof(Index));
     }
 
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public IActionResult Salir(int id)
-    {
-        var estadia = repositorioEstadia.ObtenerPorId(id);
+    // [HttpPost]
+    // [ValidateAntiForgeryToken]
+    // public IActionResult Salir(int id)
+    // {
+    //     var estadia = repositorioEstadia.ObtenerPorId(id);
 
-        if (estadia == null) return NotFound();
+    //     if (estadia == null) return NotFound();
 
-        if (!estadia.Ocupado)
-        {
-            TempData["ErrorMessage"] = "Esa estadía ya estaba finalizada.";
-            return RedirectToAction(nameof(Index));
-        }
+    //     if (!estadia.Ocupado)
+    //     {
+    //         TempData["ErrorMessage"] = "Esa estadía ya estaba finalizada.";
+    //         return RedirectToAction(nameof(Index));
+    //     }
 
-        var egreso = DateTime.Now;
+    //     var egreso = DateTime.Now;
 
-        if (repositorioEstadia.RegistrarSalida(id, egreso) == 0)
-        {
-            TempData["ErrorMessage"] = "No se pudo registrar la salida.";
-            return RedirectToAction(nameof(Index));
-        }
+    //     if (repositorioEstadia.RegistrarSalida(id, egreso) == 0)
+    //     {
+    //         TempData["ErrorMessage"] = "No se pudo registrar la salida.";
+    //         return RedirectToAction(nameof(Index));
+    //     }
 
-        var permanencia = egreso - estadia.Ingreso;
+    //     var permanencia = egreso - estadia.Ingreso;
 
-        TempData["SuccessMessage"] =
-            $"Salida registrada: {estadia.Patente}. " +
-            $"Permanencia: {(int)permanencia.TotalHours} h {permanencia.Minutes} min.";
+    //     TempData["SuccessMessage"] =
+    //         $"Salida registrada: {estadia.Patente}. " +
+    //         $"Permanencia: {(int)permanencia.TotalHours} h {permanencia.Minutes} min.";
 
-        return RedirectToAction(nameof(Index));
-    }
+    //     return RedirectToAction(nameof(Index));
+    // }
 
     // El ID del empleado sale del Claim (JWT o Cookie)
     private bool TryObtenerIdStaff(out int idStaff)
@@ -276,34 +276,34 @@ public class EstadiaController : Controller
     }
 
     // POST: api/estadia/5/salida (Registrar Salida)
-    [HttpPost("api/estadia/{id}/salida")]
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-    public IActionResult ApiRegistrarSalida(int id)
-    {
-        var estadia = repositorioEstadia.ObtenerPorId(id);
-        if (estadia == null) return NotFound(new { mensaje = "Estadía no encontrada." });
+    // [HttpPost("api/estadia/{id}/salida")]
+    // [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    // public IActionResult ApiRegistrarSalida(int id)
+    // {
+    //     var estadia = repositorioEstadia.ObtenerPorId(id);
+    //     if (estadia == null) return NotFound(new { mensaje = "Estadía no encontrada." });
 
-        if (!estadia.Ocupado) return BadRequest(new { mensaje = "La estadía ya fue finalizada previamente." });
+    //     if (!estadia.Ocupado) return BadRequest(new { mensaje = "La estadía ya fue finalizada previamente." });
 
-        var egreso = DateTime.Now;
-        int filasAfectadas = repositorioEstadia.RegistrarSalida(id, egreso);
+    //     var egreso = DateTime.Now;
+    //     int filasAfectadas = repositorioEstadia.RegistrarSalida(id, egreso);
 
-        if (filasAfectadas > 0)
-        {
-            var permanencia = egreso - estadia.Ingreso;
-            return Ok(new
-            {
-                mensaje = "Salida registrada con éxito.",
-                idEstadia = id,
-                patente = estadia.Patente,
-                egreso = egreso,
-                horasPermanencia = (int)permanencia.TotalHours,
-                minutosPermanencia = permanencia.Minutes
-            });
-        }
+    //     if (filasAfectadas > 0)
+    //     {
+    //         var permanencia = egreso - estadia.Ingreso;
+    //         return Ok(new
+    //         {
+    //             mensaje = "Salida registrada con éxito.",
+    //             idEstadia = id,
+    //             patente = estadia.Patente,
+    //             egreso = egreso,
+    //             horasPermanencia = (int)permanencia.TotalHours,
+    //             minutosPermanencia = permanencia.Minutes
+    //         });
+    //     }
 
-        return StatusCode(500, new { mensaje = "No se pudo registrar la salida en la base de datos." });
-    }
+    //     return StatusCode(500, new { mensaje = "No se pudo registrar la salida en la base de datos." });
+    // }
 
     // Las estadías se conservan en el historial.
     [HttpDelete("api/estadia/{id}")]

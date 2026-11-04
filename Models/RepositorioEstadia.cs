@@ -128,16 +128,16 @@ public class RepositorioEstadia
         return (int)comando.LastInsertedId;
     }
 
-    public int RegistrarSalida(int id, DateTime egreso)
-    {
-        // "AND Ocupado = 1" evita cerrar dos veces la misma estadía
-        return Ejecutar(@"
-            UPDATE estadia
-            SET Egreso = @egreso, Ocupado = 0
-            WHERE ID_Estadia = @id AND Ocupado = 1;",
-            ("@id", id),
-            ("@egreso", egreso));
-    }
+    // public int RegistrarSalida(int id, DateTime egreso)
+    // {
+    //     // "AND Ocupado = 1" evita cerrar dos veces la misma estadía
+    //     return Ejecutar(@"
+    //         UPDATE estadia
+    //         SET Egreso = @egreso, Ocupado = 0
+    //         WHERE ID_Estadia = @id AND Ocupado = 1;",
+    //         ("@id", id),
+    //         ("@egreso", egreso));
+    // }
 
     public bool PlazaOcupada(int idPlaza)
     {
