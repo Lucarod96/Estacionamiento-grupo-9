@@ -117,6 +117,7 @@ namespace Estacionamiento_grupo_9.Models
     string busqueda = "")
 {
     var lista = new List<Cliente>();
+    paginaNro = Math.Clamp(paginaNro, 1, 100000);
     int offset = (paginaNro - 1) * tamPagina;
 
     using var connection = new MySqlConnection(connectionString);

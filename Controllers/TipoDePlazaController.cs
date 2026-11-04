@@ -245,7 +245,7 @@ public class TipoDePlazaController : Controller
     public IActionResult ApiObtenerTodos([FromQuery] string? busqueda, [FromQuery] int pagina = 1)
     {
         string filtro = (busqueda ?? "").Trim();
-        if (filtro.Length > 100 || pagina < 1) return BadRequest(new { mensaje = "Los parámetros de búsqueda no son válidos." });
+        if (filtro.Length > 100) return BadRequest(new { mensaje = "Los parámetros de búsqueda no son válidos." });
 
         int total = repositorio.ObtenerCantidad(filtro);
         int paginas = Math.Max(1, (int)Math.Ceiling((double)total / TAMANO_PAGINA));
@@ -324,9 +324,9 @@ public class TipoDePlazaController : Controller
             repositorio.Modificacion(modelo);
             return Ok(new { mensaje = "Tipo de plaza guardado correctamente.", tipo = modelo });
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            return StatusCode(500, new { mensaje = "Error al actualizar el tipo de plaza.", detalle = ex.Message });
+            return StatusCode(500, new { mensaje = "Error al actualizar el tipo de plaza." });
         }
     }
 

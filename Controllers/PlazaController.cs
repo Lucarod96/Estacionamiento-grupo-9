@@ -216,7 +216,7 @@ public class PlazaController : Controller
     public IActionResult ApiObtenerTodos([FromQuery] string? busqueda, [FromQuery] int pagina = 1)
     {
         string filtro = (busqueda ?? "").Trim();
-        if (filtro.Length > 100 || pagina < 1) return BadRequest(new { mensaje = "Los parámetros de búsqueda no son válidos." });
+        if (filtro.Length > 100) return BadRequest(new { mensaje = "Los parámetros de búsqueda no son válidos." });
 
         int total = repositorioPlaza.ObtenerCantidad(filtro);
         int paginas = Math.Max(1, (int)Math.Ceiling((double)total / TAMANO_PAGINA));

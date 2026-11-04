@@ -248,10 +248,10 @@ public class EstadiaController : Controller
             return BadRequest(new { mensaje = "La plaza indicada no existe." });
 
         if (repositorioEstadia.PlazaOcupada(modelo.ID_Plaza))
-            return BadRequest(new { mensaje = "La plaza seleccionada ya está ocupada." });
+            return Conflict(new { mensaje = "La plaza seleccionada ya está ocupada." });
 
         if (repositorioEstadia.PatenteAdentro(patente))
-            return BadRequest(new { mensaje = "El vehículo ya posee una estadía activa." });
+            return Conflict(new { mensaje = "El vehículo ya posee una estadía activa." });
 
         if (!TryObtenerIdStaff(out int idStaff))
             return Unauthorized(new { mensaje = "No se pudo identificar al empleado emisor del token." });
@@ -269,9 +269,20 @@ public class EstadiaController : Controller
             int idCreado = repositorioEstadia.RegistrarIngreso(estadia);
             return CreatedAtAction(nameof(ApiObtenerPorId), new { id = idCreado }, estadia);
         }
-        catch (Exception ex)
+        catch (MySqlException ex) when (ex.Number == 1452)
         {
-            return StatusCode(500, new { mensaje = "Error al registrar el ingreso.", detalle = ex.Message });
+            return Conflict(new { mensaje = "La plaza o el vehículo ya no existen." });
+        }
+        catch (MySqlException ex) when (ex.Number == 1062)
+        {
+            string mensaje = ex.Message.Contains("UX_estadia_patente_activa")
+                ? "El vehículo ya posee una estadía activa."
+                : "La plaza seleccionada ya está ocupada.";
+            return Conflict(new { mensaje });
+        }
+        catch (Exception)
+        {
+            return StatusCode(500, new { mensaje = "Error al registrar el ingreso." });
         }
     }
 

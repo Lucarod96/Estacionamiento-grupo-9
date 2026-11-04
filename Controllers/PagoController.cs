@@ -257,9 +257,9 @@ namespace Estacionamiento_grupo_9.Controllers
             if (estadia == null) return NotFound(new { mensaje = "Estadía no encontrada." });
 
             var pagoExistente = repositorioPago.ObtenerPorEstadiaId(idEstadia);
-            if (pagoExistente != null) return BadRequest(new { mensaje = "Esta estadía ya fue cobrada previamente." });
+            if (pagoExistente != null) return Conflict(new { mensaje = "Esta estadía ya fue cobrada previamente." });
 
-            if (estadia.Egreso != null) return BadRequest(new { mensaje = "No se puede cobrar una estadía que ya tiene salida registrada." });
+            if (estadia.Egreso != null) return Conflict(new { mensaje = "No se puede cobrar una estadía que ya tiene salida registrada." });
 
             var plaza = repositorioPlaza.ObtenerPorId(estadia.ID_Plaza);
             if (plaza == null) return BadRequest(new { mensaje = "La plaza asociada no existe." });
@@ -322,15 +322,23 @@ namespace Estacionamiento_grupo_9.Controllers
                     return CreatedAtAction(nameof(ApiObtenerPorId), new { id = idPago }, pago);
                 }
             }
-            catch (Exception ex)
+            catch (InvalidOperationException)
             {
-                return StatusCode(500, new { mensaje = "Error al procesar el pago.", detalle = ex.Message });
+                return Conflict(new { mensaje = "La estadía ya fue finalizada o no admite el cobro." });
+            }
+            catch (MySql.Data.MySqlClient.MySqlException ex) when (ex.Number == 1062)
+            {
+                return Conflict(new { mensaje = "Esta estadía ya fue cobrada previamente." });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new { mensaje = "Error al procesar el pago." });
             }
 
             return StatusCode(500, new { mensaje = "No se pudo registrar el pago en la base de datos." });
         }
 
-               // Los pagos registrados se conservan en el historial.
+        // Los pagos registrados se conservan en el historial.
         [HttpDelete("api/pago/{id}")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = Rol.Admin)]
         public IActionResult ApiEliminar(int id)

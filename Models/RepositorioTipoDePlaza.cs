@@ -32,6 +32,8 @@ public class RepositorioTipoDePlaza
     {
         var lista = new List<TipoDePlaza>();
 
+        pagina = Math.Clamp(pagina, 1, 100000);
+        
         int desplazamiento = (pagina - 1) * cantidad;
 
         string sql = @"

@@ -50,6 +50,7 @@ public class RepositorioEstadia
     public IList<Estadia> ObtenerLista(
         int pagina, int cantidad, string busqueda, bool soloActivas)
     {
+        pagina = Math.Clamp(pagina, 1, 100000);
         var lista = new List<Estadia>();
 
         string sql = SelectBase + " WHERE " + FiltroBusqueda + @"

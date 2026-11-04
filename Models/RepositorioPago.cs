@@ -11,20 +11,20 @@ namespace Estacionamiento_grupo_9.Models
 
         public RepositorioPago(IConfiguration configuration)
         {
-            connectionString = configuration.GetConnectionString("MySql") 
-                ?? configuration.GetConnectionString("DefaultConnection") 
+            connectionString = configuration.GetConnectionString("MySql")
+                ?? configuration.GetConnectionString("DefaultConnection")
                 ?? throw new InvalidOperationException("No se encontró la cadena de conexión 'MySql' en appsettings.json.");
         }
-public int AltaConSalida(Pago pago)
-{
-    using var connection = new MySqlConnection(connectionString);
-    connection.Open();
+        public int AltaConSalida(Pago pago)
+        {
+            using var connection = new MySqlConnection(connectionString);
+            connection.Open();
 
-    using var transaction = connection.BeginTransaction();
+            using var transaction = connection.BeginTransaction();
 
-    try
-    {
-        string sqlSalida = @"
+            try
+            {
+                string sqlSalida = @"
             UPDATE estadia
             SET Egreso = @egreso, Ocupado = 0
             WHERE ID_Estadia = @idEstadia
@@ -32,23 +32,23 @@ public int AltaConSalida(Pago pago)
               AND Egreso IS NULL
               AND Ingreso <= @egreso;";
 
-        using (var command = new MySqlCommand(
-            sqlSalida, connection, transaction))
-        {
-            command.Parameters.AddWithValue(
-                "@egreso", pago.FechaEmision);
+                using (var command = new MySqlCommand(
+                    sqlSalida, connection, transaction))
+                {
+                    command.Parameters.AddWithValue(
+                        "@egreso", pago.FechaEmision);
 
-            command.Parameters.AddWithValue(
-                "@idEstadia", pago.ID_Estadia);
+                    command.Parameters.AddWithValue(
+                        "@idEstadia", pago.ID_Estadia);
 
-            if (command.ExecuteNonQuery() != 1)
-            {
-                throw new InvalidOperationException(
-                    "La estadía ya fue finalizada o no admite el cobro.");
-            }
-        }
+                    if (command.ExecuteNonQuery() != 1)
+                    {
+                        throw new InvalidOperationException(
+                            "La estadía ya fue finalizada o no admite el cobro.");
+                    }
+                }
 
-        string sqlPago = @"
+                string sqlPago = @"
             INSERT INTO Pago
                 (ID_Estadia, FechaEmision,
                  PrecioXHoraAplicado, MontoTotal, ComprobanteUrl)
@@ -56,40 +56,40 @@ public int AltaConSalida(Pago pago)
                 (@idEstadia, @fechaEmision,
                  @precioXHora, @montoTotal, @comprobanteUrl);";
 
-        int idPago;
+                int idPago;
 
-        using (var command = new MySqlCommand(
-            sqlPago, connection, transaction))
-        {
-            command.Parameters.AddWithValue(
-                "@idEstadia", pago.ID_Estadia);
+                using (var command = new MySqlCommand(
+                    sqlPago, connection, transaction))
+                {
+                    command.Parameters.AddWithValue(
+                        "@idEstadia", pago.ID_Estadia);
 
-            command.Parameters.AddWithValue(
-                "@fechaEmision", pago.FechaEmision);
+                    command.Parameters.AddWithValue(
+                        "@fechaEmision", pago.FechaEmision);
 
-            command.Parameters.AddWithValue(
-                "@precioXHora", pago.PrecioXHoraAplicado);
+                    command.Parameters.AddWithValue(
+                        "@precioXHora", pago.PrecioXHoraAplicado);
 
-            command.Parameters.AddWithValue(
-                "@montoTotal", pago.MontoTotal);
+                    command.Parameters.AddWithValue(
+                        "@montoTotal", pago.MontoTotal);
 
-            command.Parameters.AddWithValue(
-                "@comprobanteUrl",
-                (object?)pago.ComprobanteUrl ?? DBNull.Value);
+                    command.Parameters.AddWithValue(
+                        "@comprobanteUrl",
+                        (object?)pago.ComprobanteUrl ?? DBNull.Value);
 
-            command.ExecuteNonQuery();
-            idPago = checked((int)command.LastInsertedId);
+                    command.ExecuteNonQuery();
+                    idPago = checked((int)command.LastInsertedId);
+                }
+
+                transaction.Commit();
+                return idPago;
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
         }
-
-        transaction.Commit();
-        return idPago;
-    }
-    catch
-    {
-        transaction.Rollback();
-        throw;
-    }
-}
         public int Alta(Pago pago)
         {
             int res = -1;
@@ -182,17 +182,19 @@ public int AltaConSalida(Pago pago)
             return pago;
         }
 
-      public IList<Pago> ObtenerLista(
-    int paginaNro,
-    int tamPagina,
-    string busqueda = "")
-{
-    var lista = new List<Pago>();
-    int offset = (paginaNro - 1) * tamPagina;
+        public IList<Pago> ObtenerLista(
+        int paginaNro,
+        int tamPagina,
+        string busqueda = "")
+        {
+            
+            var lista = new List<Pago>();
+            paginaNro = Math.Clamp(paginaNro, 1, 100000);
+            int offset = (paginaNro - 1) * tamPagina;
 
-    using var connection = new MySqlConnection(connectionString);
+            using var connection = new MySqlConnection(connectionString);
 
-    string sql = @"
+            string sql = @"
         SELECT p.ID_Pago,
                p.ID_Estadia,
                p.FechaEmision,
@@ -206,68 +208,68 @@ public int AltaConSalida(Pago pago)
         ORDER BY p.ID_Pago DESC
         LIMIT @limit OFFSET @offset;";
 
-    using var command = new MySqlCommand(sql, connection);
+            using var command = new MySqlCommand(sql, connection);
 
-    command.Parameters.AddWithValue(
-        "@busqueda", "%" + busqueda.Trim() + "%");
+            command.Parameters.AddWithValue(
+                "@busqueda", "%" + busqueda.Trim() + "%");
 
-    command.Parameters.AddWithValue("@limit", tamPagina);
-    command.Parameters.AddWithValue("@offset", offset);
+            command.Parameters.AddWithValue("@limit", tamPagina);
+            command.Parameters.AddWithValue("@offset", offset);
 
-    connection.Open();
+            connection.Open();
 
-    using var reader = command.ExecuteReader();
+            using var reader = command.ExecuteReader();
 
-    while (reader.Read())
-    {
-        lista.Add(new Pago
-        {
-            ID_Pago = reader.GetInt32(
-                reader.GetOrdinal("ID_Pago")),
+            while (reader.Read())
+            {
+                lista.Add(new Pago
+                {
+                    ID_Pago = reader.GetInt32(
+                        reader.GetOrdinal("ID_Pago")),
 
-            ID_Estadia = reader.GetInt32(
-                reader.GetOrdinal("ID_Estadia")),
+                    ID_Estadia = reader.GetInt32(
+                        reader.GetOrdinal("ID_Estadia")),
 
-            FechaEmision = reader.GetDateTime(
-                reader.GetOrdinal("FechaEmision")),
+                    FechaEmision = reader.GetDateTime(
+                        reader.GetOrdinal("FechaEmision")),
 
-            PrecioXHoraAplicado = reader.GetDecimal(
-                reader.GetOrdinal("PrecioXHoraAplicado")),
+                    PrecioXHoraAplicado = reader.GetDecimal(
+                        reader.GetOrdinal("PrecioXHoraAplicado")),
 
-            MontoTotal = reader.GetDecimal(
-                reader.GetOrdinal("MontoTotal")),
+                    MontoTotal = reader.GetDecimal(
+                        reader.GetOrdinal("MontoTotal")),
 
-            ComprobanteUrl = reader.IsDBNull(
-                reader.GetOrdinal("ComprobanteUrl"))
-                    ? null
-                    : reader.GetString(
+                    ComprobanteUrl = reader.IsDBNull(
                         reader.GetOrdinal("ComprobanteUrl"))
-        });
-    }
+                            ? null
+                            : reader.GetString(
+                                reader.GetOrdinal("ComprobanteUrl"))
+                });
+            }
 
-    return lista;
-}
+            return lista;
+        }
 
-       public int ObtenerCantidad(string busqueda = "")
-{
-    using var connection = new MySqlConnection(connectionString);
+        public int ObtenerCantidad(string busqueda = "")
+        {
+            using var connection = new MySqlConnection(connectionString);
 
-    string sql = @"
+            string sql = @"
         SELECT COUNT(*)
         FROM Pago p
         INNER JOIN Estadia e ON p.ID_Estadia = e.ID_Estadia
         WHERE e.Patente LIKE @busqueda
            OR CAST(p.ID_Pago AS CHAR) LIKE @busqueda;";
 
-    using var command = new MySqlCommand(sql, connection);
+            using var command = new MySqlCommand(sql, connection);
 
-    command.Parameters.AddWithValue(
-        "@busqueda", "%" + busqueda.Trim() + "%");
+            command.Parameters.AddWithValue(
+                "@busqueda", "%" + busqueda.Trim() + "%");
 
-    connection.Open();
+            connection.Open();
 
-    return Convert.ToInt32(command.ExecuteScalar());
-}
+            return Convert.ToInt32(command.ExecuteScalar());
+        }
 
         public IList<Pago> Buscar(string busqueda)
         {
