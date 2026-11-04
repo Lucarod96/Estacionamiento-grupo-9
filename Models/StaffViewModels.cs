@@ -89,6 +89,26 @@ namespace Estacionamiento_grupo_9.Models
         public IFormFile? AvatarFile { get; set; }
     }
 
+    public class CambiarPasswordViewModel
+    {
+        [Required(ErrorMessage = "Ingresá tu contraseña actual.")]
+        [DataType(DataType.Password)]
+        [Display(Name = "Contraseña actual")]
+        public string PasswordActual { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Ingresá la nueva contraseña.")]
+        [DataType(DataType.Password)]
+        [StringLength(100, MinimumLength = 6, ErrorMessage = "La contraseña debe tener al menos 6 caracteres.")]
+        [Display(Name = "Nueva contraseña")]
+        public string PasswordNueva { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Repetí la nueva contraseña.")]
+        [DataType(DataType.Password)]
+        [Compare(nameof(PasswordNueva), ErrorMessage = "Las contraseñas no coinciden.")]
+        [Display(Name = "Repetir nueva contraseña")]
+        public string ConfirmarPassword { get; set; } = string.Empty;
+    }
+
     public class StaffListItem
     {
         public int Id { get; set; }

@@ -140,6 +140,42 @@ namespace Estacionamiento_grupo_9.Controllers
             return RedirectToAction(nameof(Perfil));
         }
 
+        [HttpGet]
+        public IActionResult CambiarPassword()
+        {
+            return View(new CambiarPasswordViewModel());
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CambiarPassword(CambiarPasswordViewModel model)
+        {
+            if (!ModelState.IsValid) return View(model);
+
+            var user = await userManager.GetUserAsync(User);
+            if (user == null) return RedirectToAction(nameof(Login));
+
+            var resultado = await userManager.ChangePasswordAsync(
+                user, model.PasswordActual, model.PasswordNueva);
+
+            if (!resultado.Succeeded)
+            {
+                foreach (var error in resultado.Errors)
+                {
+                    ModelState.AddModelError(string.Empty,
+                        error.Code == "PasswordMismatch"
+                            ? "La contraseña actual es incorrecta."
+                            : error.Description);
+                }
+                return View(model);
+            }
+
+            await signInManager.RefreshSignInAsync(user);
+
+            TempData["SuccessMessage"] = "Contraseña actualizada correctamente.";
+            return RedirectToAction(nameof(Perfil));
+        }
+
         // ---------------------------------------------------------------
         // ABM de Staff (solo Admin)
         // ---------------------------------------------------------------

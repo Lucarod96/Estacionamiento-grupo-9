@@ -41,19 +41,31 @@ namespace Estacionamiento_grupo_9.Controllers
 
             if (usuario == null)
             {
-                return Unauthorized(new { mensaje = "Usuario no encontrado." });
+                return Unauthorized(new { mensaje = "Credenciales inválidas." });
             }
 
-            // 2. Validar contraseña con SignInManager (misma validación que la web)
-            var resultado = await _signInManager.CheckPasswordSignInAsync(usuario, dto.Password, false);
+            // 2. Validar contraseña (lockoutOnFailure: true cuenta los intentos fallidos)
+            var resultado = await _signInManager.CheckPasswordSignInAsync(usuario, dto.Password, true);
+
+            if (resultado.IsLockedOut)
+            {
+                return StatusCode(StatusCodes.Status429TooManyRequests,
+                    new { mensaje = "Demasiados intentos fallidos. Probá de nuevo en unos minutos." });
+            }
+
             if (!resultado.Succeeded)
             {
-                return Unauthorized(new { mensaje = "Contraseña incorrecta." });
+                return Unauthorized(new { mensaje = "Credenciales inválidas." });
             }
 
             // 3. Obtener Rol
             var roles = await _userManager.GetRolesAsync(usuario);
-            var rolPrincipal = roles.FirstOrDefault() ?? "Operador";
+            var rolPrincipal = roles.FirstOrDefault();
+
+            if (rolPrincipal == null)
+            {
+                return Unauthorized(new { mensaje = "Credenciales inválidas." });
+            }
 
             // 4. Generar Token JWT
             var tokenString = GenerarJwtToken(usuario, rolPrincipal);
