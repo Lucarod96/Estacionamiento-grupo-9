@@ -118,7 +118,7 @@ Creá `ingreso.json` con una patente registrada y una **plaza libre**:
 ```powershell
 curl.exe -i -X POST http://localhost:5022/api/estadia -H "Authorization: Bearer $token" -H "Content-Type: application/json" -d "@ingreso.json"
 ```
-Esperado: `201 Created`. En la respuesta anotá el número del campo `iD_Estadia` (en el ejemplo, `7`). Si repetís el mismo ingreso, responde `409` porque la plaza y la patente ya están ocupadas.
+Esperado: `201 Created`. En la respuesta anotá el número del campo `id_Estadia` (en el ejemplo, `7`). Si repetís el mismo ingreso, responde `409` porque la plaza y la patente ya están ocupadas.
 
 Cobro (reemplazá `7` por tu número):
 ```powershell

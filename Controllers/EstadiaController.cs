@@ -267,6 +267,7 @@ public class EstadiaController : Controller
             };
 
             int idCreado = repositorioEstadia.RegistrarIngreso(estadia);
+            estadia.ID_Estadia = idCreado;
             return CreatedAtAction(nameof(ApiObtenerPorId), new { id = idCreado }, estadia);
         }
         catch (MySqlException ex) when (ex.Number == 1452)

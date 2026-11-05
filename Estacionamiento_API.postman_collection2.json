@@ -1,0 +1,1840 @@
+{
+  "info": {
+    "name": "Estacionamiento_API",
+    "description": "Pruebas de la Web API con JWT. Ejecutar con \"Run collection\" en el orden dado. Requiere la app corriendo y la base importada desde SQL/estacionamiento.sql.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5022"
+    },
+    {
+      "key": "adminUser",
+      "value": "admin"
+    },
+    {
+      "key": "adminPassword",
+      "value": "Admin123"
+    },
+    {
+      "key": "operadorUser",
+      "value": "operador"
+    },
+    {
+      "key": "operadorPassword",
+      "value": "Operador123"
+    },
+    {
+      "key": "patentePrueba",
+      "value": "PRUEBA01"
+    },
+    {
+      "key": "tokenAdmin",
+      "value": ""
+    },
+    {
+      "key": "tokenOperador",
+      "value": ""
+    },
+    {
+      "key": "tokenAlterado",
+      "value": ""
+    },
+    {
+      "key": "patenteTemp",
+      "value": ""
+    },
+    {
+      "key": "idPlaza",
+      "value": ""
+    },
+    {
+      "key": "estadiaId",
+      "value": ""
+    },
+    {
+      "key": "pagoId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Autenticación",
+      "item": [
+        {
+          "name": "1.1 Login Admin (200 + token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "const pick = (o, n) => { if (!o || typeof o !== 'object') return undefined; const k = Object.keys(o).find(x => x.toLowerCase() === n.toLowerCase()); return k ? o[k] : undefined; };",
+                  "pm.test(\"Responde 200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Devuelve un token JWT\", () => { const t = pick(j(),\"token\"); pm.expect(t).to.be.a(\"string\"); pm.expect(t.split(\".\").length).to.eql(3); pm.collectionVariables.set(\"tokenAdmin\", t); });",
+                  "pm.test(\"El rol es Admin\", () => pm.expect(pick(j(),\"rol\")).to.eql(\"Admin\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{adminUser}}\",\n  \"password\": \"{{adminPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "1.2 Login Operador (200 + token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "const pick = (o, n) => { if (!o || typeof o !== 'object') return undefined; const k = Object.keys(o).find(x => x.toLowerCase() === n.toLowerCase()); return k ? o[k] : undefined; };",
+                  "pm.test(\"Responde 200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Devuelve un token JWT\", () => { const t = pick(j(),\"token\"); pm.expect(t).to.be.a(\"string\"); pm.collectionVariables.set(\"tokenOperador\", t); });",
+                  "pm.test(\"El rol es Operador\", () => pm.expect(pick(j(),\"rol\")).to.eql(\"Operador\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{operadorUser}}\",\n  \"password\": \"{{operadorPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "1.3 Login con usuario inexistente (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "const pick = (o, n) => { if (!o || typeof o !== 'object') return undefined; const k = Object.keys(o).find(x => x.toLowerCase() === n.toLowerCase()); return k ? o[k] : undefined; };",
+                  "pm.test(\"Responde 401 Unauthorized\", () => pm.response.to.have.status(401));",
+                  "pm.test(\"El mensaje menciona: credenciales inválidas\", () => pm.expect(String(pick(j(),'mensaje')||'').toLowerCase()).to.include(\"credenciales inválidas\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Usa un usuario que no existe a propósito: así no cuenta como intento fallido de un usuario real y no lo bloquea.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"usuario.que.no.existe\",\n  \"password\": \"cualquiera\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "1.4 Login sin datos (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "const pick = (o, n) => { if (!o || typeof o !== 'object') return undefined; const k = Object.keys(o).find(x => x.toLowerCase() === n.toLowerCase()); return k ? o[k] : undefined; };",
+                  "pm.test(\"Responde 400 Bad Request\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"\",\n  \"password\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Seguridad JWT y roles",
+      "item": [
+        {
+          "name": "2.1 Sin token (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "const pick = (o, n) => { if (!o || typeof o !== 'object') return undefined; const k = Object.keys(o).find(x => x.toLowerCase() === n.toLowerCase()); return k ? o[k] : undefined; };",
+                  "pm.test(\"Responde 401 Unauthorized\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/cliente",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cliente"
+              ]
+            }
+          }
+        },
+        {
+          "name": "2.2 Token alterado (401)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const t = pm.collectionVariables.get(\"tokenAdmin\") || \"\";",
+                  "const fin = t.slice(-3) === \"AAA\" ? \"BBB\" : \"AAA\";",
+                  "pm.collectionVariables.set(\"tokenAlterado\", t.slice(0, -3) + fin);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "const pick = (o, n) => { if (!o || typeof o !== 'object') return undefined; const k = Object.keys(o).find(x => x.toLowerCase() === n.toLowerCase()); return k ? o[k] : undefined; };",
+                  "pm.test(\"Responde 401 Unauthorized (firma inválida)\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAlterado}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/cliente",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cliente"
+              ]
+            },
+            "description": "El script previo toma el token real y le cambia el final de la firma."
+          }
+        },
+        {
+          "name": "2.3 Operador intenta listar Staff (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "const pick = (o, n) => { if (!o || typeof o !== 'object') return undefined; const k = Object.keys(o).find(x => x.toLowerCase() === n.toLowerCase()); return k ? o[k] : undefined; };",
+                  "pm.test(\"Responde 403 Forbidden\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenOperador}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/staff",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "staff"
+              ]
+            }
+          }
+        },
+        {
+          "name": "2.4 Admin lista Staff (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "const pick = (o, n) => { if (!o || typeof o !== 'object') return undefined; const k = Object.keys(o).find(x => x.toLowerCase() === n.toLowerCase()); return k ? o[k] : undefined; };",
+                  "pm.test(\"Responde 200 OK\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/staff",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "staff"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Clientes: CRUD y paginado",
+      "item": [
+        {
+          "name": "3.1 Listar clientes, página 1 (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "const pick = (o, n) => { if (!o || typeof o !== 'object') return undefined; const k = Object.keys(o).find(x => x.toLowerCase() === n.toLowerCase()); return k ? o[k] : undefined; };",
+                  "pm.test(\"Responde 200 OK\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/cliente?pagina=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cliente"
+              ],
+              "query": [
+                {
+                  "key": "pagina",
+                  "value": "1"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "3.2 Listar clientes, página 2 (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "const pick = (o, n) => { if (!o || typeof o !== 'object') return undefined; const k = Object.keys(o).find(x => x.toLowerCase() === n.toLowerCase()); return k ? o[k] : undefined; };",
+                  "pm.test(\"Responde 200 OK (solo trae la página pedida)\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/cliente?pagina=2",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cliente"
+              ],
+              "query": [
+                {
+                  "key": "pagina",
+                  "value": "2"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "3.3 Página 0 no rompe la API (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "const pick = (o, n) => { if (!o || typeof o !== 'object') return undefined; const k = Object.keys(o).find(x => x.toLowerCase() === n.toLowerCase()); return k ? o[k] : undefined; };",
+                  "pm.test(\"Responde 200 OK\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/cliente?pagina=0",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cliente"
+              ],
+              "query": [
+                {
+                  "key": "pagina",
+                  "value": "0"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "3.4 Página enorme no rompe la API (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "const pick = (o, n) => { if (!o || typeof o !== 'object') return undefined; const k = Object.keys(o).find(x => x.toLowerCase() === n.toLowerCase()); return k ? o[k] : undefined; };",
+                  "pm.test(\"Responde 200 OK\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/cliente?pagina=999999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cliente"
+              ],
+              "query": [
+                {
+                  "key": "pagina",
+                  "value": "999999999"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "3.5 Crear cliente temporal (201)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"patenteTemp\", \"TMP\" + Math.floor(10000 + Math.random() * 89999));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "const pick = (o, n) => { if (!o || typeof o !== 'object') return undefined; const k = Object.keys(o).find(x => x.toLowerCase() === n.toLowerCase()); return k ? o[k] : undefined; };",
+                  "pm.test(\"Responde 201 Created\", () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/cliente",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patente\": \"{{patenteTemp}}\",\n  \"nombre\": \"Temporal\",\n  \"apellido\": \"Postman\",\n  \"telefono\": \"2664000000\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "3.6 Crear patente duplicada (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "const pick = (o, n) => { if (!o || typeof o !== 'object') return undefined; const k = Object.keys(o).find(x => x.toLowerCase() === n.toLowerCase()); return k ? o[k] : undefined; };",
+                  "pm.test(\"Responde 400 Bad Request\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"El mensaje menciona: ya existe\", () => pm.expect(String(pick(j(),'mensaje')||'').toLowerCase()).to.include(\"ya existe\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/cliente",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patente\": \"{{patenteTemp}}\",\n  \"nombre\": \"Temporal\",\n  \"apellido\": \"Postman\",\n  \"telefono\": \"2664000000\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "3.7 Crear con datos inválidos (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "const pick = (o, n) => { if (!o || typeof o !== 'object') return undefined; const k = Object.keys(o).find(x => x.toLowerCase() === n.toLowerCase()); return k ? o[k] : undefined; };",
+                  "pm.test(\"Responde 400 Bad Request\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/cliente",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patente\": \"ab\",\n  \"nombre\": \"\",\n  \"apellido\": \"\",\n  \"telefono\": \"abc\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "3.8 Obtener el cliente creado (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "const pick = (o, n) => { if (!o || typeof o !== 'object') return undefined; const k = Object.keys(o).find(x => x.toLowerCase() === n.toLowerCase()); return k ? o[k] : undefined; };",
+                  "pm.test(\"Responde 200 OK\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/cliente/{{patenteTemp}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cliente",
+                "{{patenteTemp}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "3.9 Operador intenta eliminarlo (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "const pick = (o, n) => { if (!o || typeof o !== 'object') return undefined; const k = Object.keys(o).find(x => x.toLowerCase() === n.toLowerCase()); return k ? o[k] : undefined; };",
+                  "pm.test(\"Responde 403 Forbidden\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenOperador}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/cliente/{{patenteTemp}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cliente",
+                "{{patenteTemp}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "3.10 Admin lo elimina (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "const pick = (o, n) => { if (!o || typeof o !== 'object') return undefined; const k = Object.keys(o).find(x => x.toLowerCase() === n.toLowerCase()); return k ? o[k] : undefined; };",
+                  "pm.test(\"Responde 200 OK\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/cliente/{{patenteTemp}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cliente",
+                "{{patenteTemp}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "3.11 Cliente eliminado ya no existe (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "const pick = (o, n) => { if (!o || typeof o !== 'object') return undefined; const k = Object.keys(o).find(x => x.toLowerCase() === n.toLowerCase()); return k ? o[k] : undefined; };",
+                  "pm.test(\"Responde 404 Not Found\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/cliente/{{patenteTemp}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cliente",
+                "{{patenteTemp}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Ingreso, cobro y operaciones no permitidas",
+      "item": [
+        {
+          "name": "4.1 Crear cliente de prueba fijo (201, o 400 si ya existe)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "const pick = (o, n) => { if (!o || typeof o !== 'object') return undefined; const k = Object.keys(o).find(x => x.toLowerCase() === n.toLowerCase()); return k ? o[k] : undefined; };",
+                  "pm.test(\"Responde 201 (creado) o 400 (ya existía de una corrida anterior)\", () => pm.expect([201,400]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/cliente",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patente\": \"{{patentePrueba}}\",\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"De Prueba\",\n  \"telefono\": \"2664111111\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "4.2 Ingreso válido (201)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const base = pm.collectionVariables.get(\"baseUrl\");",
+                  "const h = { Authorization: \"Bearer \" + pm.collectionVariables.get(\"tokenAdmin\") };",
+                  "const get = (path, cb) => pm.sendRequest({ url: base + path, method: \"GET\", header: h }, (e, r) => cb(e ? null : r.json()));",
+                  "let plazas = null, estadias = null, faltan = 2;",
+                  "const listo = () => {",
+                  "  if (--faltan > 0) return;",
+                  "  const items = Array.isArray(plazas) ? plazas : ((plazas && plazas.items) || []);",
+                  "  const lista = Array.isArray(estadias) ? estadias : ((estadias && estadias.items) || []);",
+                  "  const idDe = (o) => { const k = Object.keys(o).find(x => x.toLowerCase() === \"id_plaza\"); return o[k]; };",
+                  "  const ocupadas = lista.map(idDe);",
+                  "  const libre = items.map(idDe).find(id => !ocupadas.includes(id));",
+                  "  pm.collectionVariables.set(\"idPlaza\", libre || 0);",
+                  "};",
+                  "get(\"/api/plaza?pagina=1\", (r) => { plazas = r; listo(); });",
+                  "get(\"/api/estadia?soloActivas=true&pagina=1\", (r) => { estadias = r; listo(); });"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "const pick = (o, n) => { if (!o || typeof o !== 'object') return undefined; const k = Object.keys(o).find(x => x.toLowerCase() === n.toLowerCase()); return k ? o[k] : undefined; };",
+                  "pm.test(\"Responde 201 Created\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"Se obtiene el ID de la estadía\", () => { let id = pick(j(), \"id_estadia\"); if (!id) { const loc = pm.response.headers.get(\"Location\") || \"\"; id = loc.split(\"/\").pop(); } pm.expect(Number(id)).to.be.above(0); pm.collectionVariables.set(\"estadiaId\", id); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenOperador}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/estadia",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "estadia"
+              ]
+            },
+            "description": "El script previo busca solo una plaza libre. Si no hay ninguna, el ingreso falla con un mensaje claro.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"patente\": \"{{patentePrueba}}\", \"id_plaza\": {{idPlaza}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "4.3 Mismo vehículo otra vez: ya está adentro (409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "const pick = (o, n) => { if (!o || typeof o !== 'object') return undefined; const k = Object.keys(o).find(x => x.toLowerCase() === n.toLowerCase()); return k ? o[k] : undefined; };",
+                  "pm.test(\"Responde 409 Conflict\", () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenOperador}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/estadia",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "estadia"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"patente\": \"{{patentePrueba}}\", \"id_plaza\": {{idPlaza}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "4.4 Ingreso con patente no registrada (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "const pick = (o, n) => { if (!o || typeof o !== 'object') return undefined; const k = Object.keys(o).find(x => x.toLowerCase() === n.toLowerCase()); return k ? o[k] : undefined; };",
+                  "pm.test(\"Responde 400 Bad Request\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"El mensaje menciona: no está registrada\", () => pm.expect(String(pick(j(),'mensaje')||'').toLowerCase()).to.include(\"no está registrada\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenOperador}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/estadia",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "estadia"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"patente\": \"ZZZ99999\", \"id_plaza\": {{idPlaza}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "4.5 Ingreso con datos inválidos (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "const pick = (o, n) => { if (!o || typeof o !== 'object') return undefined; const k = Object.keys(o).find(x => x.toLowerCase() === n.toLowerCase()); return k ? o[k] : undefined; };",
+                  "pm.test(\"Responde 400 Bad Request\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenOperador}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/estadia",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "estadia"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patente\": \"\",\n  \"id_plaza\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "4.6 Cobrar la estadía (201)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "const pick = (o, n) => { if (!o || typeof o !== 'object') return undefined; const k = Object.keys(o).find(x => x.toLowerCase() === n.toLowerCase()); return k ? o[k] : undefined; };",
+                  "pm.test(\"Responde 201 Created\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"El monto total es mayor que cero\", () => pm.expect(Number(pick(j(), \"montoTotal\"))).to.be.above(0));",
+                  "pm.test(\"Se guarda el ID del pago\", () => { const id = pick(j(), \"id_pago\"); pm.expect(Number(id)).to.be.above(0); pm.collectionVariables.set(\"pagoId\", id); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenOperador}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pago/cobrar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pago",
+                "cobrar"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "idEstadia",
+                  "value": "{{estadiaId}}",
+                  "type": "text"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "4.7 Cobrar otra vez la misma estadía (409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "const pick = (o, n) => { if (!o || typeof o !== 'object') return undefined; const k = Object.keys(o).find(x => x.toLowerCase() === n.toLowerCase()); return k ? o[k] : undefined; };",
+                  "pm.test(\"Responde 409 Conflict\", () => pm.response.to.have.status(409));",
+                  "pm.test(\"El mensaje menciona: ya fue cobrada\", () => pm.expect(String(pick(j(),'mensaje')||'').toLowerCase()).to.include(\"ya fue cobrada\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenOperador}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pago/cobrar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pago",
+                "cobrar"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "idEstadia",
+                  "value": "{{estadiaId}}",
+                  "type": "text"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "4.8 Cobrar una estadía inexistente (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "const pick = (o, n) => { if (!o || typeof o !== 'object') return undefined; const k = Object.keys(o).find(x => x.toLowerCase() === n.toLowerCase()); return k ? o[k] : undefined; };",
+                  "pm.test(\"Responde 404 Not Found\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenOperador}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pago/cobrar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pago",
+                "cobrar"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "idEstadia",
+                  "value": "99999999",
+                  "type": "text"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "4.9 Cobrar con ID inválido (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "const pick = (o, n) => { if (!o || typeof o !== 'object') return undefined; const k = Object.keys(o).find(x => x.toLowerCase() === n.toLowerCase()); return k ? o[k] : undefined; };",
+                  "pm.test(\"Responde 400 Bad Request\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenOperador}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pago/cobrar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pago",
+                "cobrar"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "idEstadia",
+                  "value": "0",
+                  "type": "text"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "4.10 Consultar el pago creado (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "const pick = (o, n) => { if (!o || typeof o !== 'object') return undefined; const k = Object.keys(o).find(x => x.toLowerCase() === n.toLowerCase()); return k ? o[k] : undefined; };",
+                  "pm.test(\"Responde 200 OK\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenOperador}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pago/{{pagoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pago",
+                "{{pagoId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "4.11 Eliminar el pago no está permitido (405)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "const pick = (o, n) => { if (!o || typeof o !== 'object') return undefined; const k = Object.keys(o).find(x => x.toLowerCase() === n.toLowerCase()); return k ? o[k] : undefined; };",
+                  "pm.test(\"Responde 405 Method Not Allowed\", () => pm.response.to.have.status(405));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pago/{{pagoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pago",
+                "{{pagoId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "4.12 Eliminar la estadía no está permitido (405)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "const pick = (o, n) => { if (!o || typeof o !== 'object') return undefined; const k = Object.keys(o).find(x => x.toLowerCase() === n.toLowerCase()); return k ? o[k] : undefined; };",
+                  "pm.test(\"Responde 405 Method Not Allowed\", () => pm.response.to.have.status(405));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/estadia/{{estadiaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "estadia",
+                "{{estadiaId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "4.13 Ya no existe la salida sin cobro (404 o 405)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "const pick = (o, n) => { if (!o || typeof o !== 'object') return undefined; const k = Object.keys(o).find(x => x.toLowerCase() === n.toLowerCase()); return k ? o[k] : undefined; };",
+                  "pm.test(\"La estadía solo se cierra cobrando (404 o 405)\", () => pm.expect([404,405]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenOperador}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/estadia/{{estadiaId}}/salida",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "estadia",
+                "{{estadiaId}}",
+                "salida"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Plazas y tipos de plaza",
+      "item": [
+        {
+          "name": "5.1 Listar plazas, página 1 (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "const pick = (o, n) => { if (!o || typeof o !== 'object') return undefined; const k = Object.keys(o).find(x => x.toLowerCase() === n.toLowerCase()); return k ? o[k] : undefined; };",
+                  "pm.test(\"Responde 200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Trae solo la página pedida (items + paginas)\", () => { pm.expect(pick(j(),\"items\")).to.be.an(\"array\"); pm.expect(pick(j(),\"paginas\")).to.be.a(\"number\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenOperador}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/plaza?pagina=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "plaza"
+              ],
+              "query": [
+                {
+                  "key": "pagina",
+                  "value": "1"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "5.2 Listar tipos de plaza (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "const pick = (o, n) => { if (!o || typeof o !== 'object') return undefined; const k = Object.keys(o).find(x => x.toLowerCase() === n.toLowerCase()); return k ? o[k] : undefined; };",
+                  "pm.test(\"Responde 200 OK\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenOperador}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/tipodeplaza?pagina=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tipodeplaza"
+              ],
+              "query": [
+                {
+                  "key": "pagina",
+                  "value": "1"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "5.3 Operador intenta crear una plaza (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "const pick = (o, n) => { if (!o || typeof o !== 'object') return undefined; const k = Object.keys(o).find(x => x.toLowerCase() === n.toLowerCase()); return k ? o[k] : undefined; };",
+                  "pm.test(\"Responde 403 Forbidden\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenOperador}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/plaza",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "plaza"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_Plaza\": 9999,\n  \"id_TipoDePlaza\": 1,\n  \"piso\": 1,\n  \"sector\": \"Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "5.4 Admin crea una plaza con datos inválidos (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const j = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "const pick = (o, n) => { if (!o || typeof o !== 'object') return undefined; const k = Object.keys(o).find(x => x.toLowerCase() === n.toLowerCase()); return k ? o[k] : undefined; };",
+                  "pm.test(\"Responde 400 Bad Request\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/plaza",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "plaza"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_Plaza\": 0,\n  \"id_TipoDePlaza\": 0,\n  \"piso\": -1,\n  \"sector\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
