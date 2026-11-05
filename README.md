@@ -1,5 +1,11 @@
 # Sistema de Gestión de Estacionamiento – Grupo 9
 
+## 👥 Integrantes del Grupo
+
+* **Juan Demetrio Abregu** - *abregu058@gmail.com* - [@usuario_github](https://github.com/AbreguJuan) - Discord: `Nedisane`
+* **Luca Rodrigaño** - *Lucarodrigano@gmail.com* - [@usuario_github](https://github.com/Lucarod96) - Discord: `lucarod96`
+* **Alfaro Milagros Gilda** - *milagrosalfaro225@gmail.com* - [@usuario_github](https://github.com/Milagros2109) - Discord: `Alfaro_225`
+
 ## Descripción general
 Aplicación web ASP.NET Core MVC (.NET 10) para administrar un estacionamiento: registrar el ingreso de vehículos, asignarles una plaza, controlar que no haya dos vehículos en la misma plaza ni el mismo vehículo en dos plazas a la vez, y cobrar la estadía según la tarifa de cada tipo de plaza.
 
